@@ -901,6 +901,9 @@ html.paper #score .tab-knock{fill:var(--paper,#fff);}
       <button class="fb fb-tag" data-cmd="d:trill" title="Trill">!trill!</button>
       <button class="fb fb-ped" data-cmd="d:ped" title="Sustain pedal down (codeABC extension)">!ped!</button>
       <button class="fb fb-ped" data-cmd="d:ped-up" title="Sustain pedal up (codeABC extension)">!ped-up!</button>
+      <button class="fb fb-ped" data-cmd="d:pizz" title="Pizzicato from this note (strings)">!pizz!</button>
+      <button class="fb fb-ped" data-cmd="d:arco" title="Back to the bow (arco) from this note">!arco!</button>
+      <button class="fb fb-fn" data-cmd="inst" title="Give this voice an instrument (%%instrument)">%%instrument</button>
       <span class="fb-sep"></span>
       <button class="fb fb-ly" data-cmd="lyr" title="Lyrics line under the music (w:)">w:</button>
       <button class="fb fb-fn" data-cmd="voice" title="New voice (V:)">V:</button>
@@ -1513,7 +1516,7 @@ function hlMusic(s){
     const c=s[i],r=s.slice(i);let m;
     if(c==="%"){out+=sp("tk-c",r);break;}
     if(c==='"'){const j=s.indexOf('"',i+1),t=j<0?r:s.slice(i,j+1);out+=sp(/^"[\^_<>@]/.test(t)?"tk-ann":"tk-ch",t);i+=t.length;continue;}
-    if((c==="!"||c==="+")&&(m=r.match(c==="!"?/^![^!\s|]{1,30}!/:/^\+[^+\s|]{1,30}\+/))){out+=sp(/^.ped(-up)?.$/.test(m[0])?"tk-ped":"tk-dec",m[0]);i+=m[0].length;continue;}
+    if((c==="!"||c==="+")&&(m=r.match(c==="!"?/^![^!\s|]{1,30}!/:/^\+[^+\s|]{1,30}\+/))){out+=sp(/^.(ped(-up)?|pizz|arco).$/.test(m[0])?"tk-ped":"tk-dec",m[0]);i+=m[0].length;continue;}
     if(c==="["&&(m=r.match(/^\[([A-Za-z]):([^\]]*)(\]?)/))){out+=sp("tk-p","[")+sp("tk-ifield",m[1])+sp("tk-p",":")+hlFieldValue(m[1],m[2])+(m[3]?sp("tk-p","]"):"");i+=m[0].length;continue;}
     if(m=r.match(/^(?:\[\||:*\|\]|:*\|\||:*\|(?:[:]+)?|::+|\[(?=\d))(?:\s?\d+(?:[,\-]\d+)*)?/)){out+=sp("tk-bar",m[0]);i+=m[0].length;continue;}
     if(c==="["||c==="]"){out+=sp("tk-br",c);i++;continue;}
@@ -1763,7 +1766,7 @@ function renderScore(force){
   catch(e){console.error(e);scoreVis=[];scoreEl.innerHTML=`<p class="sc-empty">This ABC couldn’t be engraved: ${esc(e.message||e)}</p>`;}
   scoreEl.querySelectorAll(".tune").forEach((d,i)=>{if(!d.querySelector("svg"))d.remove();});
   scoreScroll.scrollTop=st;
-  showWarnings(warningsOf(scoreVis,src,prep).concat(gs.errs));
+  showWarnings(warningsOf(scoreVis,src,prep).concat(gs.errs,prep.errs));
   syncTuneSelect();
   if(PB.perf&&scoreVis[PB.tune])PB.perf.vo=scoreVis[PB.tune];
   buildHighlightEvents();
@@ -1783,7 +1786,7 @@ function showWarnings(ws){
 const lintSoon=debounce(()=>{
   const n=activeNote();if(!n||!hasABC()||ui.mode!=="write")return;
   try{const prep=prepAbc(n.content),vis=parseAll(prep.text);computeLineStarts(n.content);
-    const ws=warningsOf(vis,n.content,prep).concat(guitarSetup(n.content).errs);showWarnings(ws);
+    const ws=warningsOf(vis,n.content,prep).concat(guitarSetup(n.content).errs,prep.errs);showWarnings(ws);
     linesEl.querySelectorAll(".ln").forEach((el,i)=>el.classList.toggle("err",errLines.has(i)));
   }catch(e){}
 },700);
@@ -1812,7 +1815,9 @@ function onScoreClick(abcelem,tuneNumber,classes){
    · Clavichord: a physical model of two tangent-struck strings and a soundboard, rendered to samples.
    · Synthesizer: generated live (two detuned saws and a sub square through a resonant filter). */
 const P3=(a,b)=>{const r=[];for(let p=a;p<=b;p+=3)r.push(p);return r;};
-const TUNING={"clavichord":{"v100_78":2.7,"v100_81":3.7,"v100_84":3.4,"v100_87":-1.3},"epiano":{"v120_28":-6.8,"v120_31":-1.5,"v120_34":-1.2,"v120_37":-3.2,"v120_40":-2.4,"v120_43":-1.5,"v120_46":-1.2,"v120_49":-1.9,"v120_52":-1.3,"v120_55":-1.5,"v120_58":-1.2,"v120_67":-1.0,"v120_73":-1.3,"v90_28":2.0,"v90_31":2.2,"v90_34":-1.2,"v90_40":-2.4,"v90_43":-1.5,"v90_46":-2.8,"v90_49":-3.2,"v90_52":-2.4,"v90_55":-1.5,"v90_58":-1.2,"v90_73":-1.3},"guitar":{"v100_52":-4.6,"v100_78":6.6,"v100_80":-2.1,"v100_81":-10.9,"v100_79":-5.6,"v100_61":-5.8,"v100_50":-4.4,"v100_38":-6.9,"v100_57":-7.4,"v100_35":-4.9,"v100_47":-1.9,"v100_42":-5.8,"v100_54":-6.8,"v100_40":-4.6,"v100_45":1.6,"v100_44":9.1,"v100_76":-4.1,"v100_68":-5.2,"v100_66":3.9,"v100_71":1.7,"v100_69":4.1,"v100_63":-4.0,"v100_73":11.4},"harpsichord":{"v100_29":-4.4,"v100_32":-4.8,"v100_35":-4.9,"v100_38":-2.0,"v100_41":3.8,"v100_44":2.2,"v100_47":1.0,"v100_53":1.8,"v100_56":4.8,"v100_59":3.9,"v100_62":3.6,"v100_65":2.8,"v100_68":3.9,"v100_71":3.2,"v100_74":3.3,"v100_77":3.3,"v100_80":3.5,"v100_83":3.7,"v100_86":4.3,"v100_89":4.3,"v100_92":4.3},"marimba":{"v120_45":1.6,"v120_48":3.0,"v120_51":4.2,"v120_54":5.9,"v120_57":5.7,"v120_60":6.5,"v120_63":6.5,"v120_66":7.3,"v120_69":7.4,"v120_72":7.5,"v120_75":7.0,"v120_78":6.8,"v120_81":6.5,"v120_84":6.5,"v120_87":6.3,"v120_90":6.1,"v120_93":6.2,"v120_96":6.5,"v90_39":-1.6,"v90_45":1.6,"v90_48":3.0,"v90_51":4.2,"v90_54":5.9,"v90_57":5.7,"v90_60":6.5,"v90_63":7.0,"v90_66":7.3,"v90_69":7.8,"v90_72":7.8,"v90_75":7.0,"v90_78":6.6,"v90_81":6.3,"v90_84":6.3,"v90_87":6.3,"v90_90":6.1,"v90_93":6.2,"v90_96":6.5},"pizzicato":{"v100_40":10.7,"v100_61":7.8,"v100_64":-10.7,"v100_70":-10.2,"v100_73":3.6,"v100_85":3.9,"v100_88":4.7,"v100_94":8.1,"v100_97":5.7},"vibraphone":{"v120_48":1.6,"v120_51":5.3,"v120_54":4.9,"v120_57":3.3,"v120_60":3.0,"v120_63":3.0,"v120_66":3.4,"v120_69":3.7,"v120_72":3.7,"v120_75":4.2,"v120_78":4.2,"v120_81":4.1,"v120_84":4.1,"v120_87":4.2,"v120_90":5.5,"v120_93":5.4,"v90_48":1.6,"v90_51":5.3,"v90_54":4.9,"v90_57":3.3,"v90_60":3.0,"v90_63":3.0,"v90_66":3.4,"v90_69":3.7,"v90_72":3.7,"v90_75":4.2,"v90_78":4.2,"v90_81":4.1,"v90_84":4.1,"v90_87":4.2,"v90_90":5.5,"v90_93":5.4},"xylophone":{"v120_107":-11.5,"v120_53":7.9,"v120_56":8.3,"v120_59":7.5,"v120_62":7.2,"v120_65":7.4,"v120_68":7.8,"v120_71":7.2,"v120_74":8.8,"v120_77":8.7,"v120_83":-7.8,"v120_95":-11.7,"v120_98":-11.4,"v90_107":-11.5,"v90_53":7.9,"v90_56":8.3,"v90_59":7.5,"v90_62":7.2,"v90_65":7.4,"v90_68":7.8,"v90_71":7.2,"v90_74":8.8,"v90_77":8.7,"v90_83":-7.8,"v90_95":-11.7,"v90_98":-11.4},"steel":{"v100_52":-5.7,"v100_49":-5.8,"v100_72":-1.1,"v100_65":4.9,"v100_41":-4.4,"v100_61":-3.9,"v100_50":-4.4,"v100_39":-6.3,"v100_74":-1.3,"v100_38":-6.9,"v100_57":4.1,"v100_47":-4.9,"v100_48":-5.3,"v100_42":-1.9,"v100_54":-5.8,"v100_64":5.8,"v100_40":-4.6,"v100_44":-4.8,"v100_56":-10.9,"v100_70":1.9,"v100_68":3.5,"v100_46":-4.3,"v100_62":-6.9,"v100_66":3.9,"v100_53":-5.5,"v100_63":4.7,"v100_43":-3.3,"v100_55":-8.8,"v100_51":-6.3,"v100_73":-1.6,"v100_59":-2.7,"v100_60":-1.8,"v100_80":-2.6,"v100_77":-2.4,"v100_89":-2.9,"v100_83":-2.7,"v100_86":-2.7}};
+const TUNING={"clavichord":{"v100_78":2.7,"v100_81":3.7,"v100_84":3.4,"v100_87":-1.3},"epiano":{"v120_28":-6.8,"v120_31":-1.5,"v120_34":-1.2,"v120_37":-3.2,"v120_40":-2.4,"v120_43":-1.5,"v120_46":-1.2,"v120_49":-1.9,"v120_52":-1.3,"v120_55":-1.5,"v120_58":-1.2,"v120_67":-1.0,"v120_73":-1.3,"v90_28":2.0,"v90_31":2.2,"v90_34":-1.2,"v90_40":-2.4,"v90_43":-1.5,"v90_46":-2.8,"v90_49":-3.2,"v90_52":-2.4,"v90_55":-1.5,"v90_58":-1.2,"v90_73":-1.3},"guitar":{"v100_52":-4.6,"v100_78":6.6,"v100_80":-2.1,"v100_81":-10.9,"v100_79":-5.6,"v100_61":-5.8,"v100_50":-4.4,"v100_38":-6.9,"v100_57":-7.4,"v100_35":-4.9,"v100_47":-1.9,"v100_42":-5.8,"v100_54":-6.8,"v100_40":-4.6,"v100_45":1.6,"v100_44":9.1,"v100_76":-4.1,"v100_68":-5.2,"v100_66":3.9,"v100_71":1.7,"v100_69":4.1,"v100_63":-4.0,"v100_73":11.4},"harpsichord":{"v100_29":-4.4,"v100_32":-4.8,"v100_35":-4.9,"v100_38":-2.0,"v100_41":3.8,"v100_44":2.2,"v100_47":1.0,"v100_53":1.8,"v100_56":4.8,"v100_59":3.9,"v100_62":3.6,"v100_65":2.8,"v100_68":3.9,"v100_71":3.2,"v100_74":3.3,"v100_77":3.3,"v100_80":3.5,"v100_83":3.7,"v100_86":4.3,"v100_89":4.3,"v100_92":4.3},"marimba":{"v120_45":1.6,"v120_48":3.0,"v120_51":4.2,"v120_54":5.9,"v120_57":5.7,"v120_60":6.5,"v120_63":6.5,"v120_66":7.3,"v120_69":7.4,"v120_72":7.5,"v120_75":7.0,"v120_78":6.8,"v120_81":6.5,"v120_84":6.5,"v120_87":6.3,"v120_90":6.1,"v120_93":6.2,"v120_96":6.5,"v90_39":-1.6,"v90_45":1.6,"v90_48":3.0,"v90_51":4.2,"v90_54":5.9,"v90_57":5.7,"v90_60":6.5,"v90_63":7.0,"v90_66":7.3,"v90_69":7.8,"v90_72":7.8,"v90_75":7.0,"v90_78":6.6,"v90_81":6.3,"v90_84":6.3,"v90_87":6.3,"v90_90":6.1,"v90_93":6.2,"v90_96":6.5},"pizzicato":{"v100_40":10.7,"v100_61":7.8,"v100_64":-10.7,"v100_70":-10.2,"v100_73":3.6,"v100_85":3.9,"v100_88":4.7,"v100_94":8.1,"v100_97":5.7},"vibraphone":{"v120_48":1.6,"v120_51":5.3,"v120_54":4.9,"v120_57":3.3,"v120_60":3.0,"v120_63":3.0,"v120_66":3.4,"v120_69":3.7,"v120_72":3.7,"v120_75":4.2,"v120_78":4.2,"v120_81":4.1,"v120_84":4.1,"v120_87":4.2,"v120_90":5.5,"v120_93":5.4,"v90_48":1.6,"v90_51":5.3,"v90_54":4.9,"v90_57":3.3,"v90_60":3.0,"v90_63":3.0,"v90_66":3.4,"v90_69":3.7,"v90_72":3.7,"v90_75":4.2,"v90_78":4.2,"v90_81":4.1,"v90_84":4.1,"v90_87":4.2,"v90_90":5.5,"v90_93":5.4},"xylophone":{"v120_107":-11.5,"v120_53":7.9,"v120_56":8.3,"v120_59":7.5,"v120_62":7.2,"v120_65":7.4,"v120_68":7.8,"v120_71":7.2,"v120_74":8.8,"v120_77":8.7,"v120_83":-7.8,"v120_95":-11.7,"v120_98":-11.4,"v90_107":-11.5,"v90_53":7.9,"v90_56":8.3,"v90_59":7.5,"v90_62":7.2,"v90_65":7.4,"v90_68":7.8,"v90_71":7.2,"v90_74":8.8,"v90_77":8.7,"v90_83":-7.8,"v90_95":-11.7,"v90_98":-11.4},"steel":{"v100_52":-5.7,"v100_49":-5.8,"v100_72":-1.1,"v100_65":4.9,"v100_41":-4.4,"v100_61":-3.9,"v100_50":-4.4,"v100_39":-6.3,"v100_74":-1.3,"v100_38":-6.9,"v100_57":4.1,"v100_47":-4.9,"v100_48":-5.3,"v100_42":-1.9,"v100_54":-5.8,"v100_64":5.8,"v100_40":-4.6,"v100_44":-4.8,"v100_56":-10.9,"v100_70":1.9,"v100_68":3.5,"v100_46":-4.3,"v100_62":-6.9,"v100_66":3.9,"v100_53":-5.5,"v100_63":4.7,"v100_43":-3.3,"v100_55":-8.8,"v100_51":-6.3,"v100_73":-1.6,"v100_59":-2.7,"v100_60":-1.8,"v100_80":-2.6,"v100_77":-2.4,"v100_89":-2.9,"v100_83":-2.7,"v100_86":-2.7},"violin":{"v100_55":-4.7,"v100_57":3.1,"v100_60":-14.4,"v100_64":4.8,"v100_67":3.9,"v100_69":14.1,"v100_72":-1.5,"v100_79":8.9,"v100_81":-5.5,"v100_93":9.1,"v100_96":-5.4},"viola":{"v100_48":1.6,"v100_52":2.0,"v100_55":2.2,"v100_59":1.2,"v100_62":-13.4,"v100_65":-1.6,"v100_69":6.7,"v100_72":1.4,"v100_76":4.6,"v100_79":1.0,"v100_83":-5.5},"cello":{"v100_38":-1.3,"v100_39":2.4,"v100_51":-1.1,"v100_52":-11.2,"v100_62":-1.8},"bass":{"v100_30":-8.8,"v100_31":-6.1,"v100_40":-6.3,"v100_42":-1.4,"v100_44":1.3,"v100_45":2.5,"v100_49":2.0,"v100_52":1.1,"v100_56":2.6,"v100_59":-1.6},"violinpizz":{"v100_55":2.2,"v100_57":-4.3,"v100_59":-7.7,"v100_62":4.2,"v100_66":-8.8,"v100_72":13.3,"v100_76":4.8,"v100_86":-14.8},"violapizz":{"v100_36":3.7,"v100_43":2.2,"v100_47":-12.6,"v100_50":-6.9,"v100_55":2.2,"v100_57":-4.3,"v100_59":-7.7,"v100_62":4.2,"v100_66":-8.8,"v100_72":13.3,"v100_76":4.8,"v100_86":-14.8},"cellopizz":{"v100_36":3.7,"v100_43":2.2,"v100_47":-12.6,"v100_50":-6.9,"v100_57":-3.1,"v100_60":3.7,"v100_67":2.9,"v100_71":3.2,"v100_77":5.1},"basspizz":{"v100_28":-1.3,"v100_31":-3.3,"v100_34":-2.0,"v100_37":-3.9,"v100_40":-3.0,"v100_46":-9.0,"v100_49":3.0,"v100_52":3.6,"v100_55":3.6,"v100_58":3.8,"v100_61":3.0,"v100_64":3.2,"v100_67":3.3}};
+/* bowed strings: [loopStart, loopEnd, attack time] in seconds — a seamless sustain loop */
+const LOOPS={"violin":{"55":[1.0995,2.0995,0.003],"57":[2.099,3.099,0.003],"60":[1.7992,2.8006,0.003],"64":[4.8478,5.8489,0.003],"67":[1.9241,2.9241,0.003],"69":[4.7728,5.7728,0.003],"72":[0.6497,1.6492,0.003],"76":[3.0736,4.0732,0.003],"79":[0.3998,1.3998,0.003],"81":[4.1731,5.1731,0.003],"84":[3.1736,4.174,0.003],"88":[2.4489,3.4493,0.003],"91":[3.3735,4.3735,0.003],"93":[3.7983,4.7983,0.003],"96":[1.3244,2.3244,0.003]},"viola":{"48":[0.6747,1.6761,0.003],"52":[0.9496,1.9507,0.003],"55":[1.1245,2.1245,0.003],"59":[1.2744,2.2746,0.003],"62":[0.4998,1.5009,0.003],"65":[0.7996,1.799,0.003],"69":[1.2994,2.2994,0.003],"72":[0.8246,1.8241,0.003],"76":[1.1495,2.1491,0.003],"79":[0.3998,1.3998,0.003],"83":[0.9496,1.9498,0.003]},"cello":{"36":[0.4748,1.4686,0.003],"38":[1.1745,2.1688,0.003],"39":[0.6747,1.6775,0.003],"40":[0.8246,1.8197,0.003],"41":[0.8246,1.8211,0.003],"43":[1.0495,2.0495,0.003],"44":[0.4498,1.4515,0.003],"45":[1.3244,2.3244,0.003],"46":[0.3998,1.4038,0.003],"47":[0.7497,1.7459,0.003],"48":[0.3998,1.4012,0.003],"49":[0.6997,1.7026,0.003],"50":[0.6497,1.6508,0.003],"51":[0.9746,1.9774,0.003],"52":[1.0745,2.0756,0.003],"53":[0.8996,1.9018,0.003],"54":[0.6247,1.6247,0.003],"55":[0.8496,1.8496,0.003],"56":[0.8496,1.8513,0.003],"57":[0.8496,1.8496,0.003],"58":[0.5248,1.5244,0.003],"59":[0.4998,1.5,0.003],"60":[0.4748,1.4762,0.003],"61":[0.8496,1.849,0.003],"62":[0.7497,1.7508,0.003],"63":[0.7247,1.7243,0.003],"64":[0.6747,1.6758,0.003],"65":[0.7996,1.799,0.003],"66":[0.9246,1.9246,0.003],"67":[0.8496,1.8496,0.003],"68":[0.8496,1.8489,0.003],"69":[0.7247,1.7247,0.003],"70":[0.8496,1.8493,0.003],"71":[1.2744,2.2746,0.003],"72":[2.099,3.0986,0.003]},"bass":{"30":[1.4993,2.4939,0.003],"31":[4.6729,5.6729,0.003],"34":[1.5493,2.5446,0.003],"36":[3.8732,4.867,0.003],"38":[1.8492,2.8435,0.003],"40":[3.7733,4.7683,0.003],"42":[4.323,5.3176,0.003],"44":[4.0232,5.0249,0.003],"45":[4.6479,5.6479,0.003],"49":[0.4998,1.5027,0.003],"52":[4.7728,5.774,0.003],"56":[2.0491,3.0507,0.003],"59":[1.0495,2.0498,0.003]}};
 const INSTR=[
   {id:"piano",name:"Grand piano",short:"Piano",gm:0,desc:"Salamander Grand · Yamaha C5 · 3 velocity layers",
    path:(L,p)=>`piano/v${L}/${p}.mp3`,layers:[5,10,14],ref:{5:46,10:86,14:118},pick:v=>v<=60?5:v<=108?10:14,
@@ -1829,6 +1834,18 @@ const INSTR=[
   {id:"steel",name:"Steel-string guitar",short:"Steel",gm:25,desc:"Recorded acoustic guitar, every semitone · tablature",
    layers:[100],ref:{100:96},pitches:[38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 77, 80, 83, 86, 89],pedal:false,dyn:1.1,gain:.55,rel:p=>p<52?.32:.24,
    tab:true,soft:true,spread:true,oct:-12},
+  {id:"violin",name:"Violin",short:"Violin",gm:40,desc:"Recorded solo violin · seamless sustain · pizz.",
+   layers:[100],ref:{100:96},pitches:[55, 57, 60, 64, 67, 69, 72, 76, 79, 81, 84, 88, 91, 93, 96],pedal:false,dyn:1.1,gain:0.22,rel:()=>.24,loops:LOOPS.violin,pizz:"violinpizz",soft:true,strings:true},
+  {id:"viola",name:"Viola",short:"Viola",gm:41,desc:"Recorded viola section · seamless sustain · pizz.",
+   layers:[100],ref:{100:96},pitches:[48, 52, 55, 59, 62, 65, 69, 72, 76, 79, 83],pedal:false,dyn:1.1,gain:0.21,rel:()=>.26,loops:LOOPS.viola,pizz:"violapizz",soft:true,strings:true},
+  {id:"cello",name:"Cello",short:"Cello",gm:42,desc:"Recorded solo cello, every semitone · seamless sustain · pizz.",
+   layers:[100],ref:{100:96},pitches:[36, 38, 39, 40, 41, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72],pedal:false,dyn:1.1,gain:0.2,rel:()=>.3,loops:LOOPS.cello,pizz:"cellopizz",soft:true,strings:true},
+  {id:"bass",name:"Double bass",short:"Bass",gm:43,desc:"Recorded solo double bass · sounds an octave below written · pizz.",
+   layers:[100],ref:{100:96},pitches:[30, 31, 34, 36, 38, 40, 42, 44, 45, 49, 52, 56, 59],pedal:false,dyn:1.1,gain:0.21,rel:()=>.34,loops:LOOPS.bass,pizz:"basspizz",soft:true,strings:true,oct:-12},
+  {id:"violinpizz",name:"Violin pizz.",gm:45,hidden:true,layers:[100],ref:{100:96},pitches:[55, 57, 59, 62, 66, 69, 72, 76, 79, 83, 86],ring:true,dyn:1.1,gain:0.42,rel:()=>.12},
+  {id:"violapizz",name:"Viola pizz.",gm:45,hidden:true,layers:[100],ref:{100:96},pitches:[36, 40, 43, 47, 50, 53, 55, 57, 59, 62, 66, 69, 72, 76, 79, 83, 86],ring:true,dyn:1.1,gain:0.38,rel:()=>.12},
+  {id:"cellopizz",name:"Cello pizz.",gm:45,hidden:true,layers:[100],ref:{100:96},pitches:[36, 40, 43, 47, 50, 53, 57, 60, 64, 67, 71, 74, 77],ring:true,dyn:1.1,gain:0.33,rel:()=>.15},
+  {id:"basspizz",name:"Double bass pizz.",gm:32,hidden:true,layers:[100],ref:{100:96},pitches:[28, 31, 34, 37, 40, 43, 46, 49, 52, 55, 58, 61, 64, 67],ring:true,dyn:1.1,gain:0.21,rel:()=>.2,oct:-12},
   {id:"pizzicato",name:"Pizzicato strings",short:"Pizz.",gm:45,desc:"Plucked string section · rings out",
    layers:[100],ref:{100:96},pitches:P3(28,97),pedal:false,ring:true,dyn:1.1,gain:0.3,rel:()=>.15},
   {id:"vibraphone",name:"Vibraphone",short:"Vibes",gm:11,desc:"Metal bars · damper pedal · 2 velocity layers",
@@ -1842,12 +1859,51 @@ const INSTR=[
 ];
 INSTR.forEach(it=>{if(!it.path)it.path=(L,p)=>`sounds/${it.id}/v${L}/${p}.mp3`;if(!it.pick)it.pick=()=>it.layers[0];});
 const instOf=id=>INSTR.find(i=>i.id===id)||INSTR[0];
+/* General MIDI programs (from %%MIDI program, or %%instrument) → the nearest codeABC sound.
+   Program 0 means "not assigned": that voice uses the instrument picked with ♫. */
+const GM_TO_INST=p=>{
+  if(p==null||p===0||p===128)return null;
+  if(p<=3)return{id:"piano"};if(p<=5)return{id:"epiano"};if(p===6)return{id:"harpsichord"};if(p===7)return{id:"clavichord"};
+  if(p===9||p===13)return{id:"xylophone"};if(p===12)return{id:"marimba"};if(p<=14)return{id:"vibraphone"};if(p===15)return{id:"harpsichord"};
+  if(p<=23)return{id:"synth"};if(p===24)return{id:"guitar"};if(p<=31)return{id:"steel"};
+  if(p<=37)return{id:"bass",pizz:true};if(p<=39)return{id:"synth"};
+  if(p===40||p===44||p===48||p===49)return{id:"violin"};if(p===41)return{id:"viola"};if(p===42)return{id:"cello"};if(p===43)return{id:"bass"};
+  if(p===45)return{id:"pizzicato"};if(p===46)return{id:"guitar"};
+  if(p>=80&&p<=95)return{id:"synth"};
+  return null;
+};
+const INST_NAMES={"piano":1,"grand-piano":1,"harpsichord":6,"clavichord":7,"electric-piano":4,"epiano":4,"e-piano":4,
+  "guitar":24,"classical-guitar":24,"nylon-guitar":24,"steel-guitar":25,"steel-string-guitar":25,"acoustic-guitar":25,
+  "pizzicato":45,"pizzicato-strings":45,"vibraphone":11,"vibes":11,"marimba":12,"xylophone":13,"synth":81,"synthesizer":81,
+  "violin":40,"viola":41,"cello":42,"violoncello":42,"double-bass":43,"doublebass":43,"contrabass":43,"bass":43};
+/* the sound a note is played with: its voice's instrument (or the one picked with ♫), pizzicato if marked */
+function effInst(n){
+  const base=n.ins?instOf(n.ins.id):curInst();
+  return (n.pz||(n.ins&&n.ins.pizz))&&base.pizz?instOf(base.pizz):base;
+}
 const curInst=()=>instOf(prefs.instrument);
 const SND={buf:{},loading:{}};
 const sndKey=(it,L)=>it.id+":"+L;
 function decodeAudio(ctx,ab){
   return new Promise((res,rej)=>{let done=false;const ok=b=>{if(!done){done=true;res(b);}},bad=e=>{if(!done){done=true;rej(e||new Error("decode"));}};
     try{const p=ctx.decodeAudioData(ab,ok,bad);if(p&&p.then)p.then(ok,bad);}catch(e){bad(e);}});
+}
+/* MP3 decoding can add a few ms of padding and the context may resample, so the loop is matched to
+   the decoded audio: find the attack, step a little inside the baked crossfade, then pick the loop
+   length (within ±0.7 ms) whose end best continues into its start. */
+function alignLoop(buf,lp){
+  const d=buf.getChannelData(0),sr=buf.sampleRate;
+  let pk=0;for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));
+  let k=0;while(k<d.length&&Math.abs(d[k])<pk*.05)k++;
+  const shift=k/sr-lp[2];
+  const ls=Math.round((lp[0]+shift-.004)*sr),L0=Math.round((lp[1]-lp[0])*sr),W=Math.round(.012*sr),R=Math.round(.0007*sr);
+  if(ls-W<0||ls+L0+R>=d.length){buf._ls=lp[0]+shift;buf._le=lp[1]+shift;return;}
+  let bestL=L0,bestE=Infinity;
+  for(let L=L0-R;L<=L0+R;L++){
+    let e=0;for(let i=-W;i<=0;i++){const q=d[ls+L+i]-d[ls+i];e+=q*q;}
+    if(e<bestE){bestE=e;bestL=L;}
+  }
+  buf._ls=ls/sr;buf._le=(ls+bestL)/sr;
 }
 let sndProgress=null;
 function loadLayer(it,L){
@@ -1865,7 +1921,9 @@ function loadLayer(it,L){
         try{
           const r=await fetch(it.path(L,sp));
           if(!r.ok)throw new Error("HTTP "+r.status);
-          map.set(sp,await decodeAudio(AC,await r.arrayBuffer()));
+          const buf=await decodeAudio(AC,await r.arrayBuffer());
+          if(it.loops&&it.loops[sp])alignLoop(buf,it.loops[sp]);
+          map.set(sp,buf);
           done++;if(sndProgress)sndProgress(key,done/it.pitches.length);
           return;
         }catch(e){err=e;await new Promise(r=>setTimeout(r,300*(k+1)));}
@@ -1884,9 +1942,11 @@ function loadLayer(it,L){
 }
 /* only the instrument in use stays decoded — iPad memory is precious */
 function freeOtherInstruments(keep){
-  Object.keys(SND.buf).forEach(k=>{if(!k.startsWith(keep+":"))delete SND.buf[k];});
+  const ks=new Set([].concat(keep));
+  Object.keys(SND.buf).forEach(k=>{if(!ks.has(k.split(":")[0]))delete SND.buf[k];});
 }
 function layerToUse(it,v){
+  if(!it.layers.length)return undefined;
   const want=it.pick(v);
   if(SND.buf[sndKey(it,want)])return want;
   return it.layers.find(l=>SND.buf[sndKey(it,l)]);
@@ -1938,7 +1998,7 @@ function setChainLevels(c){
 /* the end of a note: its own length, or held on by the sustain pedal on instruments that have one */
 const noteEnd=(it,n)=>it.pedal&&n.pe>n.e?n.pe:n.e;
 function voice(ctx,dest,n,when,warp,it){
-  it=it||curInst();
+  it=it||effInst(n);
   /* guitars sound an octave below the written note, as in all guitar music */
   const p=clamp(Math.round(n.p+(it.oct||0)),0,127);
   const amp0=it.gain*clamp(Math.pow(Math.max(1,n.v)/(it.osc?90:it.ref[layerToUse(it,n.v)]||90),it.dyn),.25,1.55);
@@ -1951,6 +2011,9 @@ function voice(ctx,dest,n,when,warp,it){
   const src=ctx.createBufferSource(),g=ctx.createGain();
   const rate=Math.pow(2,(p-s+cents/100)/12);
   src.buffer=buf;src.playbackRate.value=rate;
+  /* bowed strings hold as long as the note: a seamless loop in the steady part of the bow stroke */
+  const lp=it.loops&&it.loops[s];
+  if(lp){src.loop=true;src.loopStart=Math.max(0,buf._ls!=null?buf._ls:lp[0]);src.loopEnd=Math.min(buf.duration,buf._le!=null?buf._le:lp[1]);}
   /* mallets and plucked strings ring out whatever the written length */
   const off=it.ring?when+Math.max(dur,buf.duration/rate):when+dur;
   const rel=it.rel(p);
@@ -1970,7 +2033,7 @@ function voice(ctx,dest,n,when,warp,it){
     node.connect(pan);node=pan;
   }
   node.connect(g);g.connect(dest);
-  src.start(when);src.stop(Math.min(off,when+buf.duration/rate)+rel+.08);
+  src.start(when);src.stop((lp?off:Math.min(off,when+buf.duration/rate))+rel+.08);
   return {src,g,end:off+rel};
 }
 function synthVoice(ctx,dest,n,when,off,amp){
@@ -2010,7 +2073,7 @@ function setInstrument(id,silent){
   if(was){silence(true);PB.playing=false;clearInterval(PB.timer);PB.pos=pos;}
   prefs.instrument=it.id;
   const tabWas=tabOn();
-  freeOtherInstruments(it.id);
+  freeOtherInstruments(PB.perf?[it.id,...usedInstruments(PB.perf)]:[it.id]);
   syncInstUI();updateSoundStat();markDirty();
   if(tabWas!==tabOn()&&ui.mode==="score")renderScore(true);
   if(!silent)toast(`${it.name}`,{icon:IC.music,dur:1300});
@@ -2036,16 +2099,25 @@ function syncInstUI(){
    +ped-up+ work too). abcjs doesn't know them, so before engraving they become "Ped." / "*"
    annotations under the staff; a position map turns every character position abcjs reports
    back into a position in your own text. */
-const PED_RX=/!ped(-up)?!|\+ped(-up)?\+/g;
+const PED_RX=/!ped(-up)?!|\+ped(-up)?\+|!pizz!|\+pizz\+|!arco!|\+arco\+|^%%instrument\b[^\n]*/gim;
 let prepCache={src:null,res:null};
 function prepAbc(src){
   if(prepCache.src===src)return prepCache.res;
-  const marks=[];let out="",last=0,m;
+  const marks=[],errs=[];let out="",last=0,m;
   PED_RX.lastIndex=0;
   while(m=PED_RX.exec(src)){
     out+=src.slice(last,m.index);
-    const up=!!(m[1]||m[2]),rep=up?'"_*"':'"_Ped."';
-    marks.push({p:out.length,o:m.index,lp:rep.length,lo:m[0].length,up});
+    let rep,kind,up=false;const t=m[0].toLowerCase();
+    if(t.startsWith("%%")){
+      /* %%instrument violin → the standard %%MIDI program 40, so abcjs gives that voice the program */
+      const name=t.replace(/^%%instrument\s*/,"").replace(/%.*$/,"").trim().replace(/[\s_]+/g,"-");
+      const prog=INST_NAMES[name];kind="inst";
+      if(prog==null){rep="% "+m[0].slice(2);errs.push({line:src.slice(0,m.index).split("\n").length-1,col:1,msg:`Unknown instrument “${name}” — try violin, viola, cello, double-bass, piano, guitar, steel-guitar, harpsichord…`});}
+      else rep="%%MIDI program "+prog;
+    }else if(/pizz/.test(t)){rep='"^pizz."';kind="pizz";}
+    else if(/arco/.test(t)){rep='"^arco"';kind="arco";}
+    else{up=/up/.test(t);rep=up?'"_*"':'"_Ped."';kind="ped";}
+    marks.push({p:out.length,o:m.index,lp:rep.length,lo:m[0].length,up,kind});
     out+=rep;last=m.index+m[0].length;
   }
   out+=src.slice(last);
@@ -2056,7 +2128,7 @@ function prepAbc(src){
     for(const k of marks){if(i<k.p)break;if(i<k.p+k.lp)return k.o;d+=k.lo-k.lp;}
     return i+d;
   };
-  const res={text:out,marks,toOrig};
+  const res={text:out,marks,toOrig,errs};
   prepCache={src,res};
   return res;
 }
@@ -2373,14 +2445,31 @@ function fixTabs(root,knock){
     });
   });
 }
+/* pizz. / arco: written as !pizz! !arco! or as the usual "^pizz." "^arco" text. Each applies, in its own
+   voice, from the note it is attached to until the voice is told otherwise. */
+function applyPizz(notes,prep,tuneIdx){
+  const xs=[];const rx=/^X:/gm;let m;while(m=rx.exec(prep.text))xs.push(m.index);
+  const a=xs.length?xs[tuneIdx]||0:0,b=xs.length&&xs[tuneIdx+1]!=null?xs[tuneIdx+1]:prep.text.length;
+  const bySc=notes.filter(n=>Number.isFinite(n.sc)).sort((x,y)=>x.sc-y.sc);
+  const marks=[],mr=/"\^\s*(pizz|arco)\.?\s*"/gi;
+  while(m=mr.exec(prep.text)){
+    if(m.index<a||m.index>=b)continue;
+    let lo=0,hi=bySc.length;while(lo<hi){const mid=(lo+hi)>>1;if(bySc[mid].sc<m.index)lo=mid+1;else hi=mid;}
+    if(lo<bySc.length)marks.push({tr:bySc[lo].tr,t:bySc[lo].s,pz:m[1].toLowerCase()==="pizz"});
+  }
+  if(!marks.length)return;
+  marks.sort((x,y)=>x.t-y.t);
+  notes.forEach(n=>{let pz=false;for(const k of marks){if(k.tr!==n.tr)continue;if(k.t<=n.s+1e-6)pz=k.pz;else break;}n.pz=pz;});
+}
 function applyPedal(notes,prep,tuneIdx,total){
   notes.forEach(n=>{n.pe=n.e;});
-  if(!prep.marks.length)return[];
+  const pm=prep.marks.filter(k=>k.kind==="ped");
+  if(!pm.length)return[];
   const xs=[];const rx=/^X:/gm;let m;while(m=rx.exec(prep.text))xs.push(m.index);
   const a=xs.length?xs[tuneIdx]||0:0,b=xs.length&&xs[tuneIdx+1]!=null?xs[tuneIdx+1]:prep.text.length;
   const bySc=notes.filter(n=>Number.isFinite(n.sc)).sort((x,y)=>x.sc-y.sc);
   const evs=[];
-  for(const k of prep.marks){
+  for(const k of pm){
     if(k.p<a||k.p>=b)continue;
     let lo=0,hi=bySc.length;while(lo<hi){const mid=(lo+hi)>>1;if(bySc[mid].sc<k.p)lo=mid+1;else hi=mid;}
     const t=lo<bySc.length?bySc[lo].s:total;
@@ -2421,7 +2510,7 @@ function buildPerf(){
   const msm=vo.millisecondsPerMeasure(flat.tempo);
   const wn=msm/1000/meterSize;
   const out=[];
-  (flat.tracks||[]).forEach(track=>{
+  (flat.tracks||[]).forEach((track,tr)=>{
     let cur=0;
     track.forEach(e=>{
       if(e.cmd==="program"){cur=e.instrument;return;}
@@ -2429,13 +2518,14 @@ function buildPerf(){
       const ins=e.instrument!==undefined?e.instrument:cur;
       if(ins===128)return;                                   /* percussion: no piano for drums */
       const gap=Math.min(e.gap||0,e.duration*2/3);
-      out.push({p:e.pitch,s:e.start*wn,e:(e.start+e.duration-gap)*wn,v:e.volume==null?90:e.volume,c:e.cents||0,sc:e.startChar});
+      out.push({p:e.pitch,s:e.start*wn,e:(e.start+e.duration-gap)*wn,v:e.volume==null?90:e.volume,c:e.cents||0,sc:e.startChar,tr,ins:GM_TO_INST(ins)});
     });
   });
   out.sort((a,b)=>a.s-b.s||a.p-b.p);
   const beats=vo.getBeatsPerMeasure?vo.getBeatsPerMeasure():4;
   const total=Math.max(flat.totalDuration*wn,out.length?out[out.length-1].e:0);
   const pedalInts=applyPedal(out,prepAbc(n.content),PB.tune,total);
+  applyPizz(out,prepAbc(n.content),PB.tune);
   PB.perf={notes:out,total,wn,tempo:flat.tempo,beats,msm,vo,pedalInts};
   PB.perfKey=key;
   return PB.perf;
@@ -2456,26 +2546,36 @@ function buildHighlightEvents(){
   }catch(e){PB.events=[];}
 }
 const curPos=()=>PB.playing&&AC?PB.p0+Math.max(0,AC.currentTime-PB.t0)*PB.warp:PB.pos;
-function needLayers(it,perf){return it.osc?[]:[...new Set(perf.notes.map(n=>it.pick(n.v)))];}
+/* every (instrument, layer) the tune needs — voices can each have their own instrument */
+function neededSets(perf){
+  const m=new Map();
+  for(const n of perf.notes){const it=effInst(n);if(it.osc)continue;const k=sndKey(it,it.pick(n.v));if(!m.has(k))m.set(k,[it,it.pick(n.v)]);}
+  return[...m.values()];
+}
+const usedInstruments=perf=>[...new Set(perf.notes.map(n=>effInst(n).id))];
 async function ensureLayers(perf){
-  const it=curInst();
-  const need=needLayers(it,perf).filter(l=>!SND.buf[sndKey(it,l)]);
+  const all=neededSets(perf);
+  freeOtherInstruments(usedInstruments(perf));
+  const need=all.filter(([it,l])=>!SND.buf[sndKey(it,l)]);
   if(!need.length)return true;
   setLoading(true,0);
   const prog={};
-  sndProgress=(key,f)=>{prog[key]=f;const tot=need.reduce((a,l)=>a+(prog[sndKey(it,l)]||0),0)/need.length;setLoading(true,tot);};
-  try{await Promise.all(need.map(l=>loadLayer(it,l)));return true;}
-  catch(e){
-    console.error(e);
-    if(it.layers.some(l=>SND.buf[sndKey(it,l)]))return true;
-    toast(navigator.onLine===false?`${it.name} samples aren’t cached yet — connect once to download them`:`Couldn’t load the ${it.name.toLowerCase()} samples`,{kind:"danger",icon:IC.warn,dur:4200});sfx("error");
-    return false;
-  }finally{sndProgress=null;setLoading(false);}
+  sndProgress=(key,f)=>{prog[key]=f;const tot=need.reduce((a,[it,l])=>a+(prog[sndKey(it,l)]||0),0)/need.length;setLoading(true,tot);};
+  const res=await Promise.allSettled(need.map(([it,l])=>loadLayer(it,l)));
+  sndProgress=null;setLoading(false);
+  const bad=res.map((r,i)=>r.status==="rejected"?need[i][0]:null).filter(Boolean);
+  if(bad.length){
+    console.error(res.filter(r=>r.status==="rejected").map(r=>r.reason));
+    const names=[...new Set(bad.map(i=>i.name.toLowerCase()))].join(", ");
+    toast(navigator.onLine===false?`${names} samples aren’t cached yet — connect once to download them`:`Couldn’t load the ${names} samples`,{kind:"danger",icon:IC.warn,dur:4200});sfx("error");
+    if(bad.length===need.length&&!all.some(([it,l])=>SND.buf[sndKey(it,l)]))return false;
+  }
+  return true;
 }
 function setLoading(on,f){
   PB.loading=on;
   $("tpPlay").classList.toggle("loading",on);
-  if(on)$("tpInfo").innerHTML=`loading ${esc(curInst().name.toLowerCase())} <b>${Math.round((f||0)*100)}%</b>`;
+  if(on)$("tpInfo").innerHTML=`loading ${esc(PB.perf?instSummary(PB.perf):curInst().name.toLowerCase())} <b>${Math.round((f||0)*100)}%</b>`;
   else paintInfo();
 }
 function unlockAudio(){
@@ -2572,10 +2672,10 @@ function auditionNotes(pitches){
   const go=()=>{
     if(!PB.chain)PB.chain=buildChain(AC);
     const t=AC.currentTime+.02;
-    pitches.slice(0,6).forEach(p=>voice(AC,PB.chain.input,{p:p.pitch,s:0,e:.5,v:p.volume||86,c:p.cents||0},t,1));
+    pitches.slice(0,6).forEach(p=>voice(AC,PB.chain.input,{p:p.pitch,s:0,e:.5,v:p.volume||86,c:p.cents||0},t,1,curInst()));
   };
   const it=curInst(),L=it.pick(86);
-  if(it.osc||SND.buf[sndKey(it,L)])go();else loadLayer(it,L).then(go).catch(()=>{});
+  if(it.osc||SND.buf[sndKey(it,L)])go();else loadLayer(it,L).then(go).catch(()=>{});   /* tapping a note previews the ♫ instrument */
 }
 /* ---------- transport UI ---------- */
 function frame(){
@@ -2621,11 +2721,16 @@ function keepVisible(el){
     scoreScroll.scrollTo({top:scoreScroll.scrollTop+(r.top-pr.top)-pr.height*.3,behavior:"smooth"});
   }
 }
+/* "violin · cello · double bass" for a tune whose voices have their own instruments */
+function instSummary(perf){
+  const ids=[...new Set(perf.notes.map(n=>(n.ins?instOf(n.ins.id):curInst()).id))].sort((a,b)=>INSTR.findIndex(i=>i.id===a)-INSTR.findIndex(i=>i.id===b));
+  return ids.map(id=>instOf(id).name.toLowerCase()).join(" · ");
+}
 function paintInfo(){
   if(PB.loading)return;
   const perf=PB.perf,n=activeNote();
   const i=n?abcInfo(n.content):null;
-  const bits=[curInst().name.toLowerCase()];
+  const bits=[perf?instSummary(perf):curInst().name.toLowerCase()];
   if(i&&i.key)bits.push("K:"+i.key);
   if(perf&&perf.tempo)bits.push(`♩=${Math.round(perf.tempo*PB.warp)}`);
   $("tpInfo").innerHTML=esc(bits.join(" · "));
@@ -2711,29 +2816,34 @@ function exportMidi(){
     const meta=(type,data)=>[255,type,...vlq(data.length),...data];
     const t0=[0,...meta(3,bytes(title)),0,...meta(81,[usq>>16&255,usq>>8&255,usq&255]),
       0,...meta(88,[clamp(mf.num||4,1,32),Math.round(Math.log2(mf.den||4)),24,8]),0,...meta(47,[])];
-    const ev=[{t:0,o:0,b:[192,it.gm]},{t:0,o:0,b:[176,7,110]},{t:0,o:0,b:[176,64,0]}];
+    /* each sound (instrument, or its pizzicato) gets a channel with its General MIDI program */
+    const chans=new Map(),chOf=ii=>{if(!chans.has(ii.id)){let c=chans.size;if(c>=9)c++;chans.set(ii.id,Math.min(c,15));}return chans.get(ii.id);};
+    const ev=[];
     let end=0;
     for(const n of perf.notes){
-      const on=tick(n.s),off=Math.max(on+1,tick(n.e)),p=clamp(Math.round(n.p+(it.oct||0)),0,127);
-      ev.push({t:on,o:3,b:[144,p,clamp(Math.round(n.v),1,127)]},{t:off,o:1,b:[128,p,0]});
+      const ii=effInst(n),ch=chOf(ii);
+      const on=tick(n.s),off=Math.max(on+1,tick(n.e)),p=clamp(Math.round(n.p+(ii.oct||0)),0,127);
+      ev.push({t:on,o:3,b:[144|ch,p,clamp(Math.round(n.v),1,127)]},{t:off,o:1,b:[128|ch,p,0]});
       end=Math.max(end,off);
     }
+    for(const[id,ch]of chans){const ii=instOf(id);ev.push({t:0,o:0,b:[192|ch,ii.gm]},{t:0,o:0,b:[176|ch,7,110]},{t:0,o:0,b:[176|ch,64,0]});}
     let pedals=0;
-    if(it.pedal){
+    for(const[id,ch]of chans){
+      const ii=instOf(id);if(!ii.pedal)continue;
       (perf.pedalInts||[]).forEach(([x,y])=>{
-        ev.push({t:tick(x),o:4,b:[176,64,127]});
-        const u=y===Infinity?end+tick(.5):tick(y);ev.push({t:u,o:2,b:[176,64,0]});end=Math.max(end,u);pedals++;
+        ev.push({t:tick(x),o:4,b:[176|ch,64,127]});
+        const u=y===Infinity?end+tick(.5):tick(y);ev.push({t:u,o:2,b:[176|ch,64,0]});end=Math.max(end,u);pedals++;
       });
     }
     ev.sort((a,b)=>a.t-b.t||a.o-b.o);
-    const t1=[0,...meta(3,bytes(it.name))];let last=0;
+    const t1=[0,...meta(3,bytes(instSummary(perf)))];let last=0;
     for(const e of ev){t1.push(...vlq(e.t-last),...e.b);last=e.t;}
     t1.push(...vlq(PPQ),...meta(47,[]));
     const chunk=(id,data)=>[...bytes(id),data.length>>>24&255,data.length>>16&255,data.length>>8&255,data.length&255,...data];
     const file=new Uint8Array([...chunk("MThd",[0,1,0,2,PPQ>>8,PPQ&255]),...chunk("MTrk",t0),...chunk("MTrk",t1)]);
     const name=slug(title)+".midi";
     downloadBlob(name,new Blob([file],{type:"audio/midi"}));
-    toast(`Exported ${name} · ${it.name.toLowerCase()}${pedals?` · ${pedals} pedal${pedals===1?"":"s"}`:""}${PB.warp!==1?` · ${Math.round(perf.tempo*PB.warp)} bpm`:""}`,{kind:"ok",icon:IC.midi,dur:2800});sfx("create");
+    toast(`Exported ${name} · ${instSummary(perf)}${pedals?` · ${pedals} pedal${pedals===1?"":"s"}`:""}${PB.warp!==1?` · ${Math.round(perf.tempo*PB.warp)} bpm`:""}`,{kind:"ok",icon:IC.midi,dur:2800});sfx("create");
   }catch(e){console.error(e);toast("MIDI export failed",{kind:"danger",icon:IC.warn});sfx("error");}
 }
 let wavBusy=false;
@@ -2746,7 +2856,7 @@ async function exportWav(){
   try{
     unlockAudio();
     if(!(await ensureLayers(perf)))return;
-    toast(`Recording the ${curInst().name.toLowerCase()}… (WAV)`,{icon:IC.wave,dur:3000});
+    toast(`Recording the ${instSummary(perf)}… (WAV)`,{icon:IC.wave,dur:3000});
     const sr=44100,warp=PB.warp,lead=.05,tail=3.2;
     const len=Math.ceil((lead+perf.total/warp+tail)*sr);
     const ctx=new OAC(2,len,sr);
@@ -3383,7 +3493,7 @@ function exportRows(id){
 }
 function buildInstPop(){
   const cur=curInst().id;
-  popInst.innerHTML=`<div class="pop-title">INSTRUMENT</div>`+INSTR.map((it,i)=>`<button class="menu-row inst-row${it.id===cur?" here":""}" type="button" data-inst="${it.id}">${IC.music}<span class="mtxt"><span class="mlab">${esc(it.name)}</span><span class="mdesc">${esc(it.desc)}</span></span><span class="tcheck">${IC.check}</span></button>`).join("")+
+  popInst.innerHTML=`<div class="pop-title">INSTRUMENT</div>`+INSTR.filter(i=>!i.hidden).map((it,i)=>`<button class="menu-row inst-row${it.id===cur?" here":""}" type="button" data-inst="${it.id}">${IC.music}<span class="mtxt"><span class="mlab">${esc(it.name)}</span><span class="mdesc">${esc(it.desc)}</span></span><span class="tcheck">${IC.check}</span></button>`).join("")+
     `<div class="pop-foot">Every voice in the tune plays on this instrument. ⌘⇧O moves to the next one.</div>`;
   popInst.querySelectorAll("[data-inst]").forEach(b=>b.addEventListener("click",()=>{closePop();setInstrument(b.dataset.inst);sfx("toggle");}));
 }
@@ -3403,7 +3513,7 @@ function sanitizePrefs(){
   const D=DEF_PREFS,ok=(k,list)=>{if(!list.includes(prefs[k]))prefs[k]=D[k];};
   ok("pdfSize",Object.keys(PDF_PAGES));ok("pdfMargin",Object.keys(PDF_MARGINS));ok("pdfPaper",Object.keys(PDF_PAPERS));
   ok("scoreColors",["theme","paper"]);
-  if(typeof INSTR!=="undefined")ok("instrument",INSTR.map(i=>i.id));
+  if(typeof INSTR!=="undefined")ok("instrument",INSTR.filter(i=>!i.hidden).map(i=>i.id));
   if(!["folder","all","pinned"].includes(prefs.filter))prefs.filter="folder";
   if(!["write","score"].includes(prefs.mode))prefs.mode="write";
   if(!FONTS.some(f=>f.id===prefs.font))prefs.font="sf";
@@ -3628,6 +3738,12 @@ function runCmd(cmd){
       replaceRange(s,e,t,s+t.length,s+t.length);break;
     }
     case"com":toggleComment();break;
+    case"inst":{
+      const a=v.lastIndexOf("\n",s-1)+1,line=v.slice(a,v.indexOf("\n",a)<0?v.length:v.indexOf("\n",a));
+      const at=line.trim()?(v.indexOf("\n",s)<0?v.length:v.indexOf("\n",s)):a;
+      const pre=line.trim()?"\n":"",ph="violin";
+      replaceRange(at,line.trim()?at:a+line.length,pre+"%%instrument "+ph,at+pre.length+13,at+pre.length+13+ph.length);break;
+    }
   }
 }
 const prev=(v,s)=>v[s-1];
@@ -3644,7 +3760,7 @@ const INFO=[
 <li><b>Write</b> — the ABC code, with syntax highlighting in the colours of your theme, line numbers, and an insert bar of ABC symbols above the editor. Lines with a problem get a red line number.</li>
 <li><b>Score</b> — the engraved sheet music with the player on top: <b>▶ play / ❚❚ pause</b>, ■ stop, a timeline you can drag, a tempo slider, loop, and the ⤓ export menu.</li>
 </ul>
-<p>The <b>♫ instrument button</b> in the top bar switches the sound: grand piano, harpsichord, clavichord, electric piano, classical guitar, steel-string guitar, pizzicato strings, vibraphone, marimba, xylophone or synthesizer. With either guitar chosen, a <b>TAB</b> button appears beside it to show guitar tablature under the staff.</p>
+<p>The <b>♫ instrument button</b> in the top bar switches the sound: grand piano, harpsichord, clavichord, electric piano, classical guitar, steel-string guitar, violin, viola, cello, double bass, pizzicato strings, vibraphone, marimba, xylophone or synthesizer. A score can also give each voice its own instrument with <code>%%instrument</code>. With either guitar chosen, a <b>TAB</b> button appears beside it to show guitar tablature under the staff.</p>
 <p>Switch with the Write / Score buttons or ${K("⌘E")}. You can also press ${K("⌘↵")} while writing to hear the tune without leaving the code; the line being played is marked in the gutter.</p>
 <h3>Your first tune</h3>
 ${ex(["X:1","T:My first tune","M:4/4","L:1/4","K:G","G A B c | d2 B2 | c A F D | G4 |]"])}
@@ -3689,6 +3805,15 @@ ${ex(["(3ABc (3:2:4ABcd      % triplet; general tuplet","{g}A {/g}A {gag}A     %
 ${ex(["G G A B | c2 B2 |","w:Twin-kle twin-kle lit-tle star","% - splits a word, _ holds a syllable, * skips a note, | jumps to the next bar"])}
 <h3>Several voices</h3>
 ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] d2 GA Bc | d2 G2 G2 |","[V:LH] [G,B,D]4 A,2 | B,6 |"])}
+<h3>An instrument for each voice</h3>
+<p>Put <code>%%instrument</code> under a voice's <code>V:</code> line and that voice plays on that instrument — every voice can have its own. Voices without one use the instrument chosen with ♫ in the top bar.</p>
+${ex(["X:1","T:String quartet","M:4/4","L:1/4","K:D","%%score (Vln1 Vln2) (Vla) (Vc)","V:Vln1","%%instrument violin","V:Vln2","%%instrument violin","V:Vla clef=alto","%%instrument viola","V:Vc clef=bass","%%instrument cello","[V:Vln1] d2 f2 | a4 |]","[V:Vln2] A2 d2 | f4 |]","[V:Vla] F2 A2 | d4 |]","[V:Vc] D,2 D,2 | D,4 |]"])}
+<p>Names you can use: <code>violin</code>, <code>viola</code>, <code>cello</code>, <code>double-bass</code>, <code>piano</code>, <code>harpsichord</code>, <code>clavichord</code>, <code>electric-piano</code>, <code>guitar</code>, <code>steel-guitar</code>, <code>pizzicato-strings</code>, <code>vibraphone</code>, <code>marimba</code>, <code>xylophone</code>, <code>synth</code>. Put it in the tune header, before any <code>V:</code>, to set the whole tune. An unknown name shows as a warning on its line.</p>
+<p><code>%%instrument</code> is a codeABC shorthand that becomes the standard <code>%%MIDI program</code> (violin is program 40), so MIDI exports carry each voice's instrument. You can also write <code>%%MIDI program</code> yourself — codeABC plays it with its nearest sound; program 0 means "not set".</p>
+<h3>Pizzicato and arco</h3>
+<p>For the violin, viola, cello and double bass, write <code>!pizz!</code> before a note to start plucking and <code>!arco!</code> to go back to the bow. They are engraved as <i>pizz.</i> and <i>arco</i> above the staff, and the usual text marks <code>"^pizz."</code> and <code>"^arco"</code> work the same way. Each voice keeps its own setting until told otherwise.</p>
+${ex(["%%instrument cello","!pizz!D, A, D A | !arco!d4 |]"])}
+<p>Plucked notes use real pizzicato recordings (a plucked upright bass for the double bass) and ring out naturally. A whole voice can also be pizzicato with <code>%%instrument pizzicato-strings</code>. In MIDI exports pizzicato notes use the pizzicato program.</p>
 <h3>Two voices on one staff</h3>
 <p>When two voices share a staff (with <code>%%score (1 2)</code>, or <code>&amp;</code> within a bar), the voice with stems up gets its articulations, ornaments and dynamics above the staff and the voice with stems down gets them below — staccatos, accents, tenutos, fermatas (inverted underneath), trills and markings like <code>!p!</code>. Put <code>%%ornament above</code> or <code>%%dynamic below</code> in a voice to override this.</p>
 <h3>Sustain pedal <span class="muted">— a codeABC extension</span></h3>
@@ -3742,7 +3867,7 @@ ${ex(["[K:D] [M:3/4] [Q:1/4=90]   % inline key, meter and tempo changes","% a ne
 <p>Anything after <code>%</code> is a comment (${K("⌘/")} comments lines in and out). A blank line ends a tune; the next one starts with its own <code>X:</code>.</p>`},
   {id:"play",name:"Playback & export",html:()=>`
 <h3>Instruments</h3>
-<p>Choose the sound with the <b>♫ button</b> in the top bar (or ${K("⌘⇧O")} to step through them, or Settings → Score). Every voice in the tune plays on the instrument you pick; the choice is remembered.</p>
+<p>Choose the sound with the <b>♫ button</b> in the top bar (or ${K("⌘⇧O")} to step through them, or Settings → Score). The choice is remembered and plays every voice that hasn't been given its own instrument with <code>%%instrument</code> (see the ABC guide). The player shows every instrument a tune uses.</p>
 <table>
 <tr><th>Instrument</th><th>Source</th><th>Pedal</th></tr>
 <tr><td><b>Grand piano</b></td><td>Salamander Grand Piano: a Yamaha C5 recorded at every minor third, 3 velocity layers</td><td>yes</td></tr>
@@ -3751,6 +3876,10 @@ ${ex(["[K:D] [M:3/4] [Q:1/4=90]   % inline key, meter and tempo changes","% a ne
 <tr><td><b>Electric piano</b></td><td>Tine electric piano, 2 velocity layers</td><td>yes</td></tr>
 <tr><td><b>Classical guitar</b></td><td>Real nylon-string guitar recordings, a sample about every whole tone, each note allowed to decay naturally. Like the real instrument's music, it sounds an octave below the written notes</td><td>—</td></tr>
 <tr><td><b>Steel-string guitar</b></td><td>Real acoustic guitar recordings, one for every semitone from D2 to D5 (GeneralUser GS above that); sounds an octave below the written notes</td><td>—</td></tr>
+<tr><td><b>Violin</b></td><td>Real solo violin recordings (every minor third), held notes sustain with a seamless loop in the steady part of the bow stroke; <code>!pizz!</code> plays real violin pizzicato</td><td>—</td></tr>
+<tr><td><b>Viola</b></td><td>Real viola section recordings (VSCO-2), sustained the same way, with pizzicato</td><td>—</td></tr>
+<tr><td><b>Cello</b></td><td>Real solo cello recordings for every semitone from C2 to C5, sustained, with real cello pizzicato</td><td>—</td></tr>
+<tr><td><b>Double bass</b></td><td>Real solo double bass recordings; like bass parts it sounds an octave below the written note; pizzicato is a plucked upright bass</td><td>—</td></tr>
 <tr><td><b>Pizzicato strings</b></td><td>Plucked string section; notes ring out</td><td>—</td></tr>
 <tr><td><b>Vibraphone</b></td><td>2 velocity layers; damped on release unless the pedal is down</td><td>yes</td></tr>
 <tr><td><b>Marimba</b>, <b>Xylophone</b></td><td>2 velocity layers; bars ring out naturally</td><td>—</td></tr>
@@ -3819,7 +3948,8 @@ ${row(K("[")+K("{")+K('"'),"Close themselves; type the closer to step over it",1
 <ul>
 <li>Engraving, MIDI and transposition: <b>abcjs</b> by Paul Rosen and Gregory Dyke — MIT licence.</li>
 <li>Piano: <b>Salamander Grand Piano V3</b> by Alexander Holm — CC BY 3.0 (MP3 conversions by Jan Forst, MIT).</li>
-<li>Guitars: recordings from <b>tonejs-instruments</b> (MIT); the steel guitar's top notes and the harpsichord, electric piano, pizzicato strings, vibraphone, marimba and xylophone: <b>GeneralUser GS</b> by S. Christian Collins, rendered to samples with spessasynth.</li>
+<li>Violin, cello and double bass: solo recordings from <b>tonejs-instruments</b> (MIT). Viola section and violin/cello pizzicato: <b>VSCO-2 Community Edition</b> by Sam Gossner (CC0), via tiny-orchestra.</li>
+<li>Guitars: recordings from <b>tonejs-instruments</b> (MIT); the double bass pizzicato, the steel guitar's top notes and the harpsichord, electric piano, pizzicato strings, vibraphone, marimba and xylophone: <b>GeneralUser GS</b> by S. Christian Collins, rendered to samples with spessasynth.</li>
 <li>Clavichord: a physical model written for codeABC. Synthesizer: generated live with Web Audio.</li>
 <li>PDF: <b>jsPDF</b> and <b>svg2pdf.js</b> — MIT licence.</li>
 <li>ABC notation standard by Chris Walshaw and the ABC community — abcnotation.com.</li>
@@ -3927,7 +4057,7 @@ function wire(){
   $("btnInfo").addEventListener("click",()=>openInfo());
   $("btnTab").addEventListener("click",()=>setTab(!prefs.tab));
   $("btnInst").addEventListener("click",()=>{ensureAudio();buildInstPop();openPop(popInst,$("btnInst"));});
-  $("setInst").innerHTML=INSTR.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join("");
+  $("setInst").innerHTML=INSTR.filter(i=>!i.hidden).map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join("");
   $("setInst").addEventListener("change",e=>{setInstrument(e.target.value);});
   $("btnPdf").addEventListener("click",()=>{if(activeId)exportPDF([activeId]);});
   $("btnSettings").addEventListener("click",()=>{ensureAudio();openPop(popSettings,$("btnSettings"));});
@@ -4062,7 +4192,7 @@ function wire(){
     if(e.shiftKey&&k==="m"){e.preventDefault();exportMidi();return;}
     if(e.shiftKey&&k==="u"){e.preventDefault();exportWav();return;}
     if(e.shiftKey&&k==="g"){e.preventDefault();if(curInst().tab)setTab(!prefs.tab);else toast("Tablature is for the guitars — pick one with ♫",{icon:IC.tab,dur:2200});return;}
-    if(e.shiftKey&&k==="o"){e.preventDefault();const i=INSTR.findIndex(x=>x.id===prefs.instrument);setInstrument(INSTR[(i+1)%INSTR.length].id);return;}
+    if(e.shiftKey&&k==="o"){e.preventDefault();const vis=INSTR.filter(x=>!x.hidden);const i=vis.findIndex(x=>x.id===prefs.instrument);setInstrument(vis[(i+1)%vis.length].id);return;}
     if(e.shiftKey&&k==="l"){e.preventDefault();prefs.loop=!prefs.loop;syncPlayUI();markDirty();toast(prefs.loop?"Loop on":"Loop off",{icon:IC.loop,dur:1200});return;}
     if(e.shiftKey&&(k==="arrowup"||k==="arrowdown"||code==="Digit0")){
       e.preventDefault();

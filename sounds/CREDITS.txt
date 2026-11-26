@@ -9,3 +9,9 @@ Harpsichord, electric piano, pizzicato strings, vibraphone, marimba, xylophone:
   Folders: sounds/<instrument>/v<velocity>/<MIDI note>.mp3, one sample every minor third.
 Clavichord: a physical model written for codeABC (two tangent-struck waveguide strings and a soundboard),
   rendered to samples the same way.
+Violin, cello and double bass (bowed): solo recordings from tonejs-instruments (MIT), 16-bit WAV originals,
+  trimmed to the attack, each given a seamless sustain loop (the steadiest ~1 s of the bow stroke, slow level
+  drift evened out, a whole number of pitch periods, 100 ms crossfade), re-encoded as VBR MP3.
+Viola (bowed) and violin/cello pizzicato: VSCO-2 Community Edition by Sam Gossner (CC0), via the tiny-orchestra
+  package; the viola looped the same way. Viola pizzicato uses the violin pizzicato, and the cello's below G3.
+Double bass pizzicato: GeneralUser GS "Acoustic Bass" (a plucked upright bass), rendered with spessasynth.
