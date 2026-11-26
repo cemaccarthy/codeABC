@@ -687,6 +687,8 @@ html.paper #score .tab-knock{fill:var(--paper,#fff);}
 .inst-row .mtxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
 .inst-row .mdesc{font-size:10px;color:var(--muted);white-space:normal;line-height:1.4;}
 .inst-row.here{background:var(--sel);}
+.inst-grp{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);opacity:.8;padding:10px 10px 3px;border-top:1px solid var(--border);margin-top:4px;}
+.inst-grp:first-of-type{border-top:0;margin-top:0;padding-top:2px;}
 .tk-ped{color:var(--syn-fn);font-weight:700;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;}
 .fb-ped{color:var(--syn-fn);font-weight:700;}
 
@@ -1813,7 +1815,7 @@ function onScoreClick(abcelem,tuneNumber,classes){
    · Harpsichord, electric piano, guitar, pizzicato strings, vibraphone, marimba, xylophone:
      rendered note by note from GeneralUser GS (uncompressed, 44.1 kHz stereo), 1–2 velocity layers.
    · Clavichord: a physical model of two tangent-struck strings and a soundboard, rendered to samples.
-   · Synthesizer: generated live (two detuned saws and a sub square through a resonant filter). */
+   · Synthesizers and the organ: generated live by the synth engine below (SYN). */
 const P3=(a,b)=>{const r=[];for(let p=a;p<=b;p+=3)r.push(p);return r;};
 const TUNING={"clavichord":{"v100_78":2.7,"v100_81":3.7,"v100_84":3.4,"v100_87":-1.3},"epiano":{"v120_28":-6.8,"v120_31":-1.5,"v120_34":-1.2,"v120_37":-3.2,"v120_40":-2.4,"v120_43":-1.5,"v120_46":-1.2,"v120_49":-1.9,"v120_52":-1.3,"v120_55":-1.5,"v120_58":-1.2,"v120_67":-1.0,"v120_73":-1.3,"v90_28":2.0,"v90_31":2.2,"v90_34":-1.2,"v90_40":-2.4,"v90_43":-1.5,"v90_46":-2.8,"v90_49":-3.2,"v90_52":-2.4,"v90_55":-1.5,"v90_58":-1.2,"v90_73":-1.3},"guitar":{"v100_52":-4.6,"v100_78":6.6,"v100_80":-2.1,"v100_81":-10.9,"v100_79":-5.6,"v100_61":-5.8,"v100_50":-4.4,"v100_38":-6.9,"v100_57":-7.4,"v100_35":-4.9,"v100_47":-1.9,"v100_42":-5.8,"v100_54":-6.8,"v100_40":-4.6,"v100_45":1.6,"v100_44":9.1,"v100_76":-4.1,"v100_68":-5.2,"v100_66":3.9,"v100_71":1.7,"v100_69":4.1,"v100_63":-4.0,"v100_73":11.4},"harpsichord":{"v100_29":-4.4,"v100_32":-4.8,"v100_35":-4.9,"v100_38":-2.0,"v100_41":3.8,"v100_44":2.2,"v100_47":1.0,"v100_53":1.8,"v100_56":4.8,"v100_59":3.9,"v100_62":3.6,"v100_65":2.8,"v100_68":3.9,"v100_71":3.2,"v100_74":3.3,"v100_77":3.3,"v100_80":3.5,"v100_83":3.7,"v100_86":4.3,"v100_89":4.3,"v100_92":4.3},"marimba":{"v120_45":1.6,"v120_48":3.0,"v120_51":4.2,"v120_54":5.9,"v120_57":5.7,"v120_60":6.5,"v120_63":6.5,"v120_66":7.3,"v120_69":7.4,"v120_72":7.5,"v120_75":7.0,"v120_78":6.8,"v120_81":6.5,"v120_84":6.5,"v120_87":6.3,"v120_90":6.1,"v120_93":6.2,"v120_96":6.5,"v90_39":-1.6,"v90_45":1.6,"v90_48":3.0,"v90_51":4.2,"v90_54":5.9,"v90_57":5.7,"v90_60":6.5,"v90_63":7.0,"v90_66":7.3,"v90_69":7.8,"v90_72":7.8,"v90_75":7.0,"v90_78":6.6,"v90_81":6.3,"v90_84":6.3,"v90_87":6.3,"v90_90":6.1,"v90_93":6.2,"v90_96":6.5},"pizzicato":{"v100_40":10.7,"v100_61":7.8,"v100_64":-10.7,"v100_70":-10.2,"v100_73":3.6,"v100_85":3.9,"v100_88":4.7,"v100_94":8.1,"v100_97":5.7},"vibraphone":{"v120_48":1.6,"v120_51":5.3,"v120_54":4.9,"v120_57":3.3,"v120_60":3.0,"v120_63":3.0,"v120_66":3.4,"v120_69":3.7,"v120_72":3.7,"v120_75":4.2,"v120_78":4.2,"v120_81":4.1,"v120_84":4.1,"v120_87":4.2,"v120_90":5.5,"v120_93":5.4,"v90_48":1.6,"v90_51":5.3,"v90_54":4.9,"v90_57":3.3,"v90_60":3.0,"v90_63":3.0,"v90_66":3.4,"v90_69":3.7,"v90_72":3.7,"v90_75":4.2,"v90_78":4.2,"v90_81":4.1,"v90_84":4.1,"v90_87":4.2,"v90_90":5.5,"v90_93":5.4},"xylophone":{"v120_107":-11.5,"v120_53":7.9,"v120_56":8.3,"v120_59":7.5,"v120_62":7.2,"v120_65":7.4,"v120_68":7.8,"v120_71":7.2,"v120_74":8.8,"v120_77":8.7,"v120_83":-7.8,"v120_95":-11.7,"v120_98":-11.4,"v90_107":-11.5,"v90_53":7.9,"v90_56":8.3,"v90_59":7.5,"v90_62":7.2,"v90_65":7.4,"v90_68":7.8,"v90_71":7.2,"v90_74":8.8,"v90_77":8.7,"v90_83":-7.8,"v90_95":-11.7,"v90_98":-11.4},"steel":{"v100_52":-5.7,"v100_49":-5.8,"v100_72":-1.1,"v100_65":4.9,"v100_41":-4.4,"v100_61":-3.9,"v100_50":-4.4,"v100_39":-6.3,"v100_74":-1.3,"v100_38":-6.9,"v100_57":4.1,"v100_47":-4.9,"v100_48":-5.3,"v100_42":-1.9,"v100_54":-5.8,"v100_64":5.8,"v100_40":-4.6,"v100_44":-4.8,"v100_56":-10.9,"v100_70":1.9,"v100_68":3.5,"v100_46":-4.3,"v100_62":-6.9,"v100_66":3.9,"v100_53":-5.5,"v100_63":4.7,"v100_43":-3.3,"v100_55":-8.8,"v100_51":-6.3,"v100_73":-1.6,"v100_59":-2.7,"v100_60":-1.8,"v100_80":-2.6,"v100_77":-2.4,"v100_89":-2.9,"v100_83":-2.7,"v100_86":-2.7},"violin":{"v100_55":-4.7,"v100_57":3.1,"v100_60":-14.4,"v100_64":4.8,"v100_67":3.9,"v100_69":14.1,"v100_72":-1.5,"v100_79":8.9,"v100_81":-5.5,"v100_93":9.1,"v100_96":-5.4},"viola":{"v100_48":1.6,"v100_52":2.0,"v100_55":2.2,"v100_59":1.2,"v100_62":-13.4,"v100_65":-1.6,"v100_69":6.7,"v100_72":1.4,"v100_76":4.6,"v100_79":1.0,"v100_83":-5.5},"cello":{"v100_38":-1.3,"v100_39":2.4,"v100_51":-1.1,"v100_52":-11.2,"v100_62":-1.8},"bass":{"v100_30":-8.8,"v100_31":-6.1,"v100_40":-6.3,"v100_42":-1.4,"v100_44":1.3,"v100_45":2.5,"v100_49":2.0,"v100_52":1.1,"v100_56":2.6,"v100_59":-1.6},"violinpizz":{"v100_55":2.2,"v100_57":-4.3,"v100_59":-7.7,"v100_62":4.2,"v100_66":-8.8,"v100_72":13.3,"v100_76":4.8,"v100_86":-14.8},"violapizz":{"v100_36":3.7,"v100_43":2.2,"v100_47":-12.6,"v100_50":-6.9,"v100_55":2.2,"v100_57":-4.3,"v100_59":-7.7,"v100_62":4.2,"v100_66":-8.8,"v100_72":13.3,"v100_76":4.8,"v100_86":-14.8},"cellopizz":{"v100_36":3.7,"v100_43":2.2,"v100_47":-12.6,"v100_50":-6.9,"v100_57":-3.1,"v100_60":3.7,"v100_67":2.9,"v100_71":3.2,"v100_77":5.1},"basspizz":{"v100_28":-1.3,"v100_31":-3.3,"v100_34":-2.0,"v100_37":-3.9,"v100_40":-3.0,"v100_46":-9.0,"v100_49":3.0,"v100_52":3.6,"v100_55":3.6,"v100_58":3.8,"v100_61":3.0,"v100_64":3.2,"v100_67":3.3},"flute":{"v100_60":-3.5,"v100_64":-2.6,"v100_76":-1.3,"v100_84":2.9,"v100_88":-2.6,"v100_93":2.2,"v100_96":1.1},"clarinet":{"v100_50":3.3,"v100_53":1.5,"v100_62":2.3,"v100_65":5.8,"v100_70":2.6,"v100_74":2.8,"v100_77":4.8,"v100_82":3.7,"v100_86":6.4},"oboe":{"v100_58":3.2,"v100_62":2.3,"v100_65":3.0,"v100_70":1.8,"v100_74":1.9,"v100_77":3.2,"v100_82":-1.3},"bassoon":{"v100_55":-1.9,"v100_72":1.1}};
 /* bowed strings: [loopStart, loopEnd, attack time] in seconds — a seamless sustain loop */
@@ -1862,28 +1864,49 @@ const INSTR=[
    layers:[90,120],ref:{90:88,120:118},pick:v=>v<=108?90:120,pitches:P3(36,96),pedal:false,ring:true,dyn:1.1,gain:0.15,rel:()=>.12},
   {id:"xylophone",name:"Xylophone",short:"Xylo",gm:13,desc:"Hard mallets · rings out · 2 velocity layers",
    layers:[90,120],ref:{90:88,120:118},pick:v=>v<=108?90:120,pitches:P3(53,107),pedal:false,ring:true,dyn:1.1,gain:0.26,rel:()=>.1},
-  {id:"synth",name:"Synthesizer",short:"Synth",gm:81,desc:"Analogue-style saw synth, generated live",
-   osc:true,layers:[],pedal:true,dyn:1,gain:0.1}
+  {id:"synth",name:"Saw lead",short:"Saw lead",gm:81,grp:"Synths",desc:"Fat analogue lead · two detuned saws and a sub, resonant filter, vibrato",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"square-lead",name:"Square lead",short:"Square",gm:80,grp:"Synths",desc:"Hollow pulse-wave lead with a warm filter and delayed vibrato",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"sine-lead",name:"Sine lead",short:"Sine lead",gm:82,grp:"Synths",desc:"Pure, soft, theremin-like lead with expressive vibrato",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"chiptune",name:"Chiptune",short:"Chiptune",gm:83,grp:"Synths",desc:"8-bit pulse wave, like a vintage games console",osc:true,layers:[],pedal:true,dyn:.6,gain:.1},
+  {id:"supersaw",name:"Supersaw",short:"Supersaw",gm:90,grp:"Synths",desc:"Seven detuned saws across the stereo field · huge trance chords",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"synth-pluck",name:"Synth pluck",short:"Pluck",gm:84,grp:"Synths",desc:"Snappy filtered pluck that decays away · arpeggios",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"synth-brass",name:"Synth brass",short:"Brass",gm:62,grp:"Synths",desc:"80s poly brass · filter swells on every note",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"string-machine",name:"String machine",short:"Strings",gm:50,grp:"Synths",desc:"Vintage string ensemble · lush chorused saws",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"warm-pad",name:"Warm pad",short:"Warm pad",gm:89,grp:"Synths",desc:"Slow, soft analogue pad · breathing filter",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"sweep-pad",name:"Sweep pad",short:"Sweep",gm:95,grp:"Synths",desc:"Resonant filter slowly sweeping through a wide pad",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"crystal-pad",name:"Crystal pad",short:"Crystal",gm:88,grp:"Synths",desc:"Shimmering FM bell attack over a glassy pad",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"fm-piano",name:"FM electric piano",short:"FM piano",gm:5,grp:"Synths",desc:"Classic 80s FM tine piano · bright bell-like attack",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"fm-bells",name:"FM bells",short:"Bells",gm:98,grp:"Synths",desc:"Inharmonic FM bells that ring out",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"organ",name:"Drawbar organ",short:"Organ",gm:16,grp:"Synths",desc:"Tonewheel drawbar organ with rotary speaker",osc:true,layers:[],pedal:true,dyn:.5,gain:.1},
+  {id:"synth-bass",name:"Analogue bass",short:"Synth bass",gm:38,grp:"Synths",desc:"Round, punchy analogue bass · saw and sub",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"acid-bass",name:"Acid bass",short:"Acid",gm:39,grp:"Synths",desc:"Squelchy resonant bass · play harder for more squelch",osc:true,layers:[],pedal:true,dyn:1,gain:.1},
+  {id:"sub-bass",name:"Sub bass",short:"Sub",gm:87,grp:"Synths",desc:"Deep, clean sine sub bass with a touch of warmth",osc:true,layers:[],pedal:true,dyn:.8,gain:.1}
 ];
+const INST_GRPS=["Keyboards","Guitars","Strings","Woodwinds","Mallets","Synths"];
+INSTR.forEach(it=>{if(!it.grp)it.grp=/^(guitar|steel)$/.test(it.id)?"Guitars":/^(violin|viola|cello|bass|pizzicato)/.test(it.id)?"Strings":/^(flute|oboe|clarinet|bassoon)$/.test(it.id)?"Woodwinds":/^(vibraphone|marimba|xylophone)$/.test(it.id)?"Mallets":"Keyboards";});
 INSTR.forEach(it=>{if(!it.path)it.path=(L,p)=>`sounds/${it.id}/v${L}/${p}.mp3`;if(!it.pick)it.pick=()=>it.layers[0];});
 const instOf=id=>INSTR.find(i=>i.id===id)||INSTR[0];
 /* General MIDI programs (from %%MIDI program, or %%instrument) → the nearest codeABC sound.
    Program 0 means "not assigned": that voice uses the instrument picked with ♫. */
 const GM_TO_INST=p=>{
   if(p==null||p===0||p===128)return null;
-  if(p<=3)return{id:"piano"};if(p<=5)return{id:"epiano"};if(p===6)return{id:"harpsichord"};if(p===7)return{id:"clavichord"};
+  if(p<=3)return{id:"piano"};if(p===4)return{id:"epiano"};if(p===5)return{id:"fm-piano"};if(p===6)return{id:"harpsichord"};if(p===7)return{id:"clavichord"};
   if(p===9||p===13)return{id:"xylophone"};if(p===12)return{id:"marimba"};if(p<=14)return{id:"vibraphone"};if(p===15)return{id:"harpsichord"};
-  if(p<=23)return{id:"synth"};if(p===24)return{id:"guitar"};if(p<=31)return{id:"steel"};
-  if(p<=37)return{id:"bass",pizz:true};if(p<=39)return{id:"synth"};
+  if(p<=20)return{id:"organ"};if(p<=23)return{id:"square-lead"};if(p===24)return{id:"guitar"};if(p<=31)return{id:"steel"};
+  if(p<=37)return{id:"bass",pizz:true};if(p===38)return{id:"synth-bass"};if(p===39)return{id:"acid-bass"};
   if(p===40||p===44||p===48||p===49)return{id:"violin"};if(p===41)return{id:"viola"};if(p===42)return{id:"cello"};if(p===43)return{id:"bass"};
-  if(p===45)return{id:"pizzicato"};if(p===46)return{id:"guitar"};
+  if(p===45)return{id:"pizzicato"};if(p===46)return{id:"guitar"};if(p===50||p===51)return{id:"string-machine"};if(p===62||p===63)return{id:"synth-brass"};
   if(p===68||p===69)return{id:"oboe"};if(p===70)return{id:"bassoon"};if(p===71)return{id:"clarinet"};if(p>=72&&p<=75)return{id:"flute"};
-  if(p>=80&&p<=95)return{id:"synth"};
+  const S={80:"square-lead",81:"synth",82:"sine-lead",83:"chiptune",84:"synth-pluck",85:"sine-lead",86:"synth",87:"sub-bass",88:"crystal-pad",89:"warm-pad",
+    90:"supersaw",91:"warm-pad",92:"crystal-pad",93:"warm-pad",94:"warm-pad",95:"sweep-pad",96:"crystal-pad",97:"sweep-pad",98:"fm-bells",99:"crystal-pad",100:"crystal-pad",101:"sweep-pad",102:"warm-pad",103:"sweep-pad",112:"fm-bells"};
+  if(S[p])return{id:S[p]};
   return null;
 };
 const INST_NAMES={"piano":1,"grand-piano":1,"harpsichord":6,"clavichord":7,"electric-piano":4,"epiano":4,"e-piano":4,
   "guitar":24,"classical-guitar":24,"nylon-guitar":24,"steel-guitar":25,"steel-string-guitar":25,"acoustic-guitar":25,
-  "pizzicato":45,"pizzicato-strings":45,"vibraphone":11,"vibes":11,"marimba":12,"xylophone":13,"synth":81,"synthesizer":81,
+  "pizzicato":45,"pizzicato-strings":45,"vibraphone":11,"vibes":11,"marimba":12,"xylophone":13,"synth":81,"synthesizer":81,"saw-lead":81,"square-lead":80,"sine-lead":82,"chiptune":83,"8-bit":83,"supersaw":90,"synth-pluck":84,"pluck":84,
+  "synth-brass":62,"string-machine":50,"synth-strings":50,"warm-pad":89,"pad":89,"sweep-pad":95,"crystal-pad":88,"fm-piano":5,"fm-electric-piano":5,"dx-piano":5,
+  "fm-bells":98,"bells":98,"organ":16,"drawbar-organ":16,"synth-bass":38,"analogue-bass":38,"analog-bass":38,"acid-bass":39,"sub-bass":87,
   "flute":73,"oboe":68,"clarinet":71,"bassoon":70,"violin":40,"viola":41,"cello":42,"violoncello":42,"double-bass":43,"doublebass":43,"contrabass":43,"bass":43};
 /* the sound a note is played with: its voice's instrument (or the one picked with ♫), pizzicato if marked */
 function effInst(n){
@@ -2012,7 +2035,7 @@ function voice(ctx,dest,n,when,warp,it){
   const p=clamp(Math.round(n.p+(it.oct||0)),0,127);
   const amp0=it.gain*clamp(Math.pow(Math.max(1,n.v)/(it.osc?90:it.ref[layerToUse(it,n.v)]||90),it.dyn),.25,1.55);
   const dur=Math.max(.04,(noteEnd(it,n)-n.s)/warp);
-  if(it.osc)return synthVoice(ctx,dest,it.oct?{...n,p}:n,when,when+dur,amp0);
+  if(it.osc)return synthVoice(ctx,dest,it.oct?{...n,p}:n,when,when+dur,amp0,it);
   const L=layerToUse(it,n.v);if(L===undefined)return null;
   const ps=it.pitches,s=ps.reduce((a,b)=>Math.abs(b-p)<Math.abs(a-p)?b:a,ps[0]);
   const buf=SND.buf[sndKey(it,L)].get(s);if(!buf)return null;
@@ -2045,24 +2068,178 @@ function voice(ctx,dest,n,when,warp,it){
   src.start(when);src.stop((lp?off:Math.min(off,when+buf.duration/rate))+rel+.08);
   return {src,g,end:off+rel};
 }
-function synthVoice(ctx,dest,n,when,off,amp){
-  const f=440*Math.pow(2,(n.p-69+(n.c||0)/100)/12);
-  const flt=ctx.createBiquadFilter(),g=ctx.createGain();
-  flt.type="lowpass";flt.Q.value=3;
-  const hi=Math.min(f*16,11000),lo=Math.min(Math.max(f*3,600),5000);
-  flt.frequency.setValueAtTime(hi,when);flt.frequency.setTargetAtTime(lo,when+.004,.16);
-  flt.frequency.setTargetAtTime(Math.max(200,lo*.5),off,.08);
-  const oscs=[["sawtooth",-8,.5],["sawtooth",8,.5],["square",-1200,.28]].map(([t,det,lv])=>{
-    const o=ctx.createOscillator(),og=ctx.createGain();
-    o.type=t;o.frequency.value=f;o.detune.value=det;og.gain.value=lv;o.connect(og);og.connect(flt);return o;
+/* ============================== SYNTHESIZERS ==============================
+   Every synth is generated live, so it needs no download, sustains for as long as the note does
+   and is identical in playback and WAV export. Waveforms are built as band-limited PeriodicWaves
+   (no aliasing at any pitch), and each unison oscillator gets its own starting phase, as free-running
+   analogue oscillators have — so stacked saws open up wide instead of starting in one loud spike.
+   A patch is: oscillators (wave, octave, unison count/spread/stereo width, optional FM modulators),
+   a key-tracked filter with its own envelope, an amplitude envelope, LFOs and optional drive. */
+const SYN={
+  synth:{lv:0.743,osc:[{w:"saw",n:2,sp:9,pan:.35,lv:.5},{w:"square",o:-12,lv:.3}],
+    flt:{f:2.4,min:520,max:6500,env:2600,a:.004,d:.4,s:.35,r:.14,q:5,vel:1500},amp:{a:.004,d:.3,s:.82,r:.14},vib:{rate:5.3,depth:13,delay:.3},drive:1.4},
+  "square-lead":{lv:0.992,osc:[{w:"pulse",pw:.5,n:2,sp:6,pan:.3,lv:.5},{w:"pulse",pw:.3,o:12,lv:.12}],
+    flt:{f:3,min:700,max:7000,env:1500,a:.004,d:.3,s:.4,r:.12,q:2,vel:1200},amp:{a:.005,d:.2,s:.88,r:.12},vib:{rate:5.6,depth:16,delay:.35}},
+  "sine-lead":{lv:0.612,osc:[{w:"sine",lv:.8},{w:"tri",o:12,lv:.09},{w:"sine",o:-12,lv:.12}],
+    amp:{a:.045,d:.3,s:.9,r:.22},vib:{rate:5.2,depth:22,delay:.18,fade:.5}},
+  chiptune:{lv:0.902,osc:[{w:"pulse",pw:.25,lv:.7,ph:0}],
+    flt:{f:40,min:9000,max:15000,q:0},amp:{a:.002,d:.08,s:.85,r:.035},vib:{rate:6.5,depth:24,delay:.32,fade:.06}},
+  supersaw:{lv:1.841,osc:[{w:"saw",n:7,sp:22,pan:.85,lv:.32},{w:"saw",o:-12,lv:.18}],hp:120,
+    flt:{f:7,min:2400,max:12500,env:900,a:.003,d:.6,s:.5,r:.3,q:.8,vel:1300},amp:{a:.006,d:.4,s:.85,r:.32}},
+  "synth-pluck":{lv:2.328,osc:[{w:"saw",n:2,sp:8,pan:.4,lv:.45},{w:"square",lv:.25}],
+    flt:{f:1.4,min:220,max:3000,env:4200,a:.001,d:.24,s:0,r:.2,q:6,vel:1800},amp:{a:.002,d:.9,s:0,r:.18}},
+  "synth-brass":{lv:1.554,osc:[{w:"saw",n:3,sp:10,pan:.5,lv:.42},{w:"saw",o:-12,lv:.12}],
+    flt:{f:1.6,min:380,max:5000,env:2700,a:.09,d:.5,s:.55,r:.2,q:1.5,vel:1600},amp:{a:.03,d:.4,s:.85,r:.2},vib:{rate:5,depth:8,delay:.45}},
+  "string-machine":{lv:2.272,osc:[{w:"saw",n:4,sp:7,pan:.75,lv:.35},{w:"saw",o:12,n:2,sp:6,pan:.6,lv:.12}],hp:160,
+    flt:{f:5,min:1500,max:6000,q:.3,vel:900},amp:{a:.22,d:.3,s:.92,r:.65},ens:{r1:.63,d1:9,r2:5.9,d2:3.5},shelf:-4},
+  "warm-pad":{lv:1.734,osc:[{w:"saw",n:4,sp:12,pan:.8,lv:.3},{w:"tri",o:-12,lv:.25}],hp:90,
+    flt:{f:2.2,min:420,max:3200,env:1100,a:.9,d:1.5,s:.4,r:1.2,q:2,vel:900,lfo:{rate:.18,depth:420}},amp:{a:.6,d:1,s:.9,r:1.3}},
+  "sweep-pad":{lv:1.415,osc:[{w:"saw",n:3,sp:14,pan:.8,lv:.3},{w:"pulse",pw:.35,n:2,sp:9,pan:.6,o:-12,lv:.22}],hp:110,
+    flt:{f:2.2,min:420,max:3600,q:9,vel:600,lfo:{rate:.11,depth:2100,sync:true}},amp:{a:.4,d:1,s:.92,r:1.4}},
+  "crystal-pad":{lv:1.581,osc:[{w:"sine",n:2,sp:6,pan:.5,lv:.4,fm:[{r:3.5,i:2.4,i2:.06,t:.55},{r:1,i:.45,i2:.45,t:1}]},{w:"tri",o:12,n:2,sp:10,pan:.8,lv:.12,a:.5}],hp:120,
+    amp:{a:.004,d:2.4,s:.55,r:1.5}},
+  "fm-piano":{lv:1.742,keyDecay:true,osc:[{w:"sine",n:2,sp:4,pan:.35,lv:.55,fm:[{r:1,i:1.6,i2:.18,t:.55,vel:1}]},{w:"sine",lv:.22,fm:[{r:14,i:1.3,i2:0,t:.045,vel:1,hiCut:true}]}],
+    amp:{a:.002,d:3,s:0,r:.3}},
+  "fm-bells":{lv:0.75,keyDecay:true,ring:2.2,osc:[{w:"sine",lv:.55,fm:[{r:3.5,i:2.8,i2:.35,t:1.4,vel:1}]},{w:"sine",o:12,lv:.12,fm:[{r:1.4,i:1.2,i2:0,t:.6}]}],
+    amp:{a:.002,d:6,s:0,r:1.6}},
+  organ:{lv:1.698,osc:[{w:"organ",o:-12,lv:.6}],flt:{f:40,min:7000,max:12000,q:0},amp:{a:.006,d:.1,s:1,r:.07},rot:{rate:5.8,vib:5,trem:.12,pan:.3},click:true},
+  "synth-bass":{lv:1.279,osc:[{w:"saw",lv:.5},{w:"square",o:-12,lv:.38},{w:"saw",sp:7,lv:.25,det:7}],
+    flt:{f:2.5,min:160,max:2600,env:2800,a:.002,d:.3,s:.25,r:.1,q:4,vel:1400},amp:{a:.003,d:.5,s:.8,r:.09},drive:1.6},
+  "acid-bass":{lv:0.797,osc:[{w:"saw",lv:.7}],
+    flt:{f:1.3,min:110,max:1800,env:4300,a:.002,d:.2,s:.05,r:.08,q:16,vel:2600},amp:{a:.002,d:.4,s:.85,r:.07},drive:3},
+  "sub-bass":{lv:0.844,osc:[{w:"sine",lv:.9},{w:"tri",lv:.12}],amp:{a:.006,d:.3,s:.95,r:.12},drive:1.3,lpf:900}
+};
+const _waveCache=new WeakMap();
+/* band-limited wave with a given starting phase (0…1) */
+function synWave(ctx,w,pw,ph){
+  let m=_waveCache.get(ctx);if(!m){m=new Map();_waveCache.set(ctx,m);}
+  const key=w+"|"+(pw||0)+"|"+ph.toFixed(3);let pwv=m.get(key);if(pwv)return pwv;
+  const N=w==="sine"?2:w==="organ"?40:1024,re=new Float32Array(N),im=new Float32Array(N),phi=ph*2*Math.PI;
+  /* drawbars 8 8 8 6 0 4 0 0 2 (16′ 5⅓′ 8′ 4′ 2⅔′ 2′ 1⅗′ 1⅓′ 1′), 3 dB a step, on the 16′ fundamental */
+  const DB={1:8,3:8,2:8,4:6,6:0,8:4,10:0,12:0,16:2};
+  for(let k=1;k<N;k++){
+    let a=0,b=0;
+    if(w==="saw")b=(k%2?1:-1)/k;
+    else if(w==="square"){if(k%2)b=1/k;}
+    else if(w==="pulse")a=Math.sin(Math.PI*k*pw)/k;
+    else if(w==="tri"){if(k%2)b=((k-1)/2%2?-1:1)/(k*k);}
+    else if(w==="sine"){if(k===1)b=1;}
+    else if(w==="organ"){const d=DB[k];if(d)b=Math.pow(10,(d-8)*3/20);}
+    re[k]=a*Math.cos(k*phi)+b*Math.sin(k*phi);im[k]=-a*Math.sin(k*phi)+b*Math.cos(k*phi);
+  }
+  pwv=ctx.createPeriodicWave(re,im);m.set(key,pwv);return pwv;
+}
+let _driveCurve=new Map();
+function driveCurve(k){
+  if(_driveCurve.has(k))return _driveCurve.get(k);
+  const c=new Float32Array(2048),t=Math.tanh(k);
+  for(let i=0;i<2048;i++){const x=i/1023.5-1;c[i]=Math.tanh(k*x)/t;}
+  _driveCurve.set(k,c);return c;
+}
+/* attack–decay–sustain–release on an AudioParam, cut short cleanly if the note ends early */
+function adsr(P,when,off,a,d,sus,r,peak,base){
+  a=Math.max(.001,a);const T=off-when,tau=Math.max(.002,d/3);
+  const at=t=>t<a?base+(peak-base)*t/a:sus+(peak-sus)*Math.exp(-(t-a)/tau);
+  P.setValueAtTime(base,when);
+  if(T<=a)P.linearRampToValueAtTime(at(T),off);
+  else{P.linearRampToValueAtTime(peak,when+a);P.setTargetAtTime(sus,when+a,tau);P.setValueAtTime(at(T),off);}
+  P.setTargetAtTime(base,off,Math.max(.002,r/4.5));
+}
+function synthVoice(ctx,dest,n,when,off,amp,it){
+  const P=SYN[(it&&it.id)||"synth"]||SYN.synth;
+  const f=440*Math.pow(2,(n.p-69+(n.c||0)/100)/12),vel=clamp((n.v||80)/127,0,1);
+  const rel=P.amp.r,stopAt=off+rel*1.6+.15;
+  const all=[];   /* every source node, to start and stop */
+  const out=ctx.createGain();out.gain.value=0;
+  /* the note's own stereo buses: unison oscillators fan out left and right */
+  const C=ctx.createGain(),sp=ctx.createStereoPanner?1:0;
+  const bus=pan=>{if(!sp||Math.abs(pan)<.05)return C;const pn=ctx.createStereoPanner();pn.pan.value=clamp(pan,-1,1);pn.connect(C);return pn;};
+  /* pitch LFO (vibrato), shared by every oscillator */
+  let vibG=null;
+  if(P.vib||P.rot){
+    const v=P.vib||{rate:P.rot.rate,depth:P.rot.vib,delay:0},lfo=ctx.createOscillator();vibG=ctx.createGain();
+    lfo.frequency.value=v.rate;lfo.connect(vibG);all.push(lfo);
+    const d0=when+(v.delay||0);
+    vibG.gain.setValueAtTime(0,when);vibG.gain.setValueAtTime(0,d0);vibG.gain.linearRampToValueAtTime(v.depth,d0+(v.fade!=null?v.fade:.35));
+  }
+  let ens=null;
+  if(P.ens){const mk=(r,dp)=>{const l=ctx.createOscillator(),gp=ctx.createGain(),gn=ctx.createGain();l.frequency.value=r;gp.gain.value=dp;gn.gain.value=-dp;l.connect(gp);l.connect(gn);all.push(l);return[gp,gn];};
+    ens=[mk(P.ens.r1,P.ens.d1),mk(P.ens.r2,P.ens.d2)];}
+  let oi=0;
+  P.osc.forEach((O,ei)=>{
+    const u=O.n||1,fo=f*Math.pow(2,(O.o||0)/12);
+    if(fo>ctx.sampleRate*.45)return;
+    const lv=O.lv/Math.sqrt(u);
+    const carriers=[];
+    for(let k=0;k<u;k++){
+      const x=u>1?k/(u-1)*2-1:0;   /* −1…1 across the unison stack */
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      const ph=O.ph!=null?O.ph:((oi*.6180339+ei*.27)%1);oi++;
+      o.setPeriodicWave(synWave(ctx,O.w,O.pw,ph));
+      o.frequency.value=fo;o.detune.value=x*(O.sp||0)+(O.det||0);
+      g.gain.value=lv*(u>2&&Math.abs(x)<.01?1.2:1);
+      if(O.a){g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(lv,when+O.a);}
+      if(vibG)vibG.connect(o.detune);
+      if(ens){const s=k%2?1:0;ens[0][s].connect(o.detune);ens[1][1-s].connect(o.detune);}
+      o.connect(g);g.connect(bus(u>1?x*(O.pan||0):0));
+      all.push(o);carriers.push(o);
+    }
+    /* FM: modulators drive the carriers' frequency; the index fades from i to i2 */
+    (O.fm||[]).forEach(M=>{
+      const fm=fo*M.r;
+      const m=ctx.createOscillator(),mg=ctx.createGain();m.frequency.value=fm;
+      let I=M.i*(M.vel?.45+vel*.9:1);
+      if(M.hiCut)I*=clamp(500/fo,.12,1);
+      const top=Math.min(I*fm,ctx.sampleRate*.2),end=Math.min(M.i2*fm*(M.vel?.45+vel*.9:1),top);
+      mg.gain.setValueAtTime(top,when);mg.gain.setTargetAtTime(end,when,M.t);
+      mg.gain.setTargetAtTime(0,off,Math.max(.01,rel/3));
+      m.connect(mg);carriers.forEach(c=>mg.connect(c.frequency));all.push(m);
+    });
   });
-  const a=amp*.62;
-  g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(a,when+.006);
-  g.gain.setTargetAtTime(a*.72,when+.006,.12);
-  g.gain.setTargetAtTime(0,off,.08);
-  flt.connect(g);g.connect(dest);
-  oscs.forEach(o=>{o.start(when);o.stop(off+.6);});
-  return {src:{stop:t=>oscs.forEach(o=>{try{o.stop(t);}catch(_){}})},g,end:off+.5};
+  let node=C;
+  if(P.hp){const h=ctx.createBiquadFilter();h.type="highpass";h.frequency.value=P.hp;h.Q.value=.5;node.connect(h);node=h;}
+  if(P.flt){
+    const F=P.flt,fl=ctx.createBiquadFilter();fl.type="lowpass";fl.Q.value=F.q||0;
+    fl.frequency.value=clamp(f*F.f,F.min,Math.min(F.max,ctx.sampleRate*.45));
+    const vc=(vel-.7)*(F.vel||0);
+    if(F.env){const e=F.env*(.55+vel*.6);adsr(fl.detune,when,off,F.a,F.d,vc+e*F.s,F.r,vc+e,vc);}
+    else fl.detune.setValueAtTime(vc,when);
+    if(F.lfo){
+      const l=ctx.createOscillator(),lg=ctx.createGain();
+      /* a slow sweep keeps going from note to note instead of restarting on each one */
+      l.setPeriodicWave(synWave(ctx,"sine",0,F.lfo.sync?((n.s||0)*F.lfo.rate+.75)%1:.75));
+      l.frequency.value=F.lfo.rate;lg.gain.value=F.lfo.depth;l.connect(lg);lg.connect(fl.detune);all.push(l);
+    }
+    node.connect(fl);node=fl;
+  }
+  if(P.lpf){const l=ctx.createBiquadFilter();l.type="lowpass";l.frequency.value=P.lpf;l.Q.value=0;node.connect(l);node=l;}
+  if(P.shelf){const sh=ctx.createBiquadFilter();sh.type="highshelf";sh.frequency.value=4500;sh.gain.value=P.shelf;node.connect(sh);node=sh;}
+  if(P.drive){const ws=ctx.createWaveShaper();ws.curve=driveCurve(P.drive);ws.oversample="4x";node.connect(ws);node=ws;}
+  /* rotary speaker: tremolo and a swirl between the speakers */
+  if(P.rot){
+    const tr=ctx.createGain(),l=ctx.createOscillator(),lg=ctx.createGain();
+    tr.gain.value=1-P.rot.trem;l.frequency.value=P.rot.rate*.97;lg.gain.value=P.rot.trem;l.connect(lg);lg.connect(tr.gain);all.push(l);
+    node.connect(tr);node=tr;
+    if(ctx.createStereoPanner){const pn=ctx.createStereoPanner(),pg=ctx.createGain();pg.gain.value=P.rot.pan;l.connect(pg);pg.connect(pn.pan);node.connect(pn);node=pn;}
+  }
+  node.connect(out);out.connect(dest);
+  /* amplitude: fixed sustain, or a piano-like decay that is longer for lower notes */
+  const A=P.amp,peak=amp*P.lv;
+  let d=A.d;if(P.keyDecay)d=A.d*clamp(Math.pow(261.6/f,.45),.35,2.2);
+  const ringOff=P.ring?Math.max(off,when+.05):off;
+  adsr(out.gain,when,ringOff,A.a,d,peak*A.s,P.ring?P.ring:rel,peak,0);
+  /* the organ's key click */
+  if(P.click){
+    const len=Math.floor(ctx.sampleRate*.006),b=ctx.createBuffer(1,len,ctx.sampleRate),ch=b.getChannelData(0);
+    let seed=(n.p*7919)%233280;
+    for(let i=0;i<len;i++){seed=(seed*9301+49297)%233280;ch[i]=(seed/233280*2-1)*Math.pow(1-i/len,2);}
+    const s=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),cg=ctx.createGain();
+    s.buffer=b;bp.type="bandpass";bp.frequency.value=clamp(f*6,1500,6000);bp.Q.value=1;cg.gain.value=peak*.5*vel;
+    s.connect(bp);bp.connect(cg);cg.connect(dest);s.start(when);
+  }
+  const end=Math.max(stopAt,P.ring?off+P.ring*1.6:0);
+  all.forEach(o=>{o.start(when);o.stop(end);});
+  return {src:{stop:t=>all.forEach(o=>{try{o.stop(t);}catch(_){}})},g:out,end:end-.1};
 }
 function click(ctx,dest,when,accent){
   const o=ctx.createOscillator(),g=ctx.createGain();
@@ -3595,7 +3772,7 @@ function exportRows(id){
 }
 function buildInstPop(){
   const cur=curInst().id;
-  popInst.innerHTML=`<div class="pop-title">INSTRUMENT</div>`+INSTR.filter(i=>!i.hidden).map((it,i)=>`<button class="menu-row inst-row${it.id===cur?" here":""}" type="button" data-inst="${it.id}">${IC.music}<span class="mtxt"><span class="mlab">${esc(it.name)}</span><span class="mdesc">${esc(it.desc)}</span></span><span class="tcheck">${IC.check}</span></button>`).join("")+
+  popInst.innerHTML=`<div class="pop-title">INSTRUMENT</div>`+INSTR.filter(i=>!i.hidden).map((it,i)=>[it,i]).sort((x,y)=>INST_GRPS.indexOf(x[0].grp)-INST_GRPS.indexOf(y[0].grp)||x[1]-y[1]).map(x=>x[0]).map((it,i,arr)=>(i===0||arr[i-1].grp!==it.grp?`<div class="inst-grp">${esc(it.grp)}</div>`:"")+`<button class="menu-row inst-row${it.id===cur?" here":""}" type="button" data-inst="${it.id}">${IC.music}<span class="mtxt"><span class="mlab">${esc(it.name)}</span><span class="mdesc">${esc(it.desc)}</span></span><span class="tcheck">${IC.check}</span></button>`).join("")+
     `<div class="pop-foot">Every voice in the tune plays on this instrument. ⌘⇧O moves to the next one.</div>`;
   popInst.querySelectorAll("[data-inst]").forEach(b=>b.addEventListener("click",()=>{closePop();setInstrument(b.dataset.inst);sfx("toggle");}));
 }
@@ -3862,7 +4039,7 @@ const INFO=[
 <li><b>Write</b> — the ABC code, with syntax highlighting in the colours of your theme, line numbers, and an insert bar of ABC symbols above the editor. Lines with a problem get a red line number.</li>
 <li><b>Score</b> — the engraved sheet music with the player on top: <b>▶ play / ❚❚ pause</b>, ■ stop, a timeline you can drag, a tempo slider, loop, and the ⤓ export menu.</li>
 </ul>
-<p>The <b>♫ instrument button</b> in the top bar switches the sound: grand piano, harpsichord, clavichord, electric piano, classical guitar, steel-string guitar, violin, viola, cello, double bass, flute, oboe, clarinet, bassoon, pizzicato strings, vibraphone, marimba, xylophone or synthesizer. A score can also give each voice its own instrument with <code>%%instrument</code>. With either guitar chosen, a <b>TAB</b> button appears beside it to show guitar tablature under the staff.</p>
+<p>The <b>♫ instrument button</b> in the top bar switches the sound: grand piano, harpsichord, clavichord, electric piano, classical guitar, steel-string guitar, violin, viola, cello, double bass, flute, oboe, clarinet, bassoon, pizzicato strings, vibraphone, marimba, xylophone, or one of the <b>synthesizers</b>: saw lead, square lead, sine lead, chiptune, supersaw, synth pluck, synth brass, string machine, warm pad, sweep pad, crystal pad, FM electric piano, FM bells, drawbar organ, analogue bass, acid bass and sub bass. A score can also give each voice its own instrument with <code>%%instrument</code>. With either guitar chosen, a <b>TAB</b> button appears beside it to show guitar tablature under the staff.</p>
 <p>Switch with the Write / Score buttons or ${K("⌘E")}. You can also press ${K("⌘↵")} while writing to hear the tune without leaving the code; the line being played is marked in the gutter.</p>
 <h3>Your first tune</h3>
 ${ex(["X:1","T:My first tune","M:4/4","L:1/4","K:G","G A B c | d2 B2 | c A F D | G4 |]"])}
@@ -3910,7 +4087,7 @@ ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] d2 GA Bc | d
 <h3>An instrument for each voice</h3>
 <p>Put <code>%%instrument</code> under a voice's <code>V:</code> line and that voice plays on that instrument — every voice can have its own. Voices without one use the instrument chosen with ♫ in the top bar.</p>
 ${ex(["X:1","T:String quartet","M:4/4","L:1/4","K:D","%%score (Vln1 Vln2) (Vla) (Vc)","V:Vln1","%%instrument violin","V:Vln2","%%instrument violin","V:Vla clef=alto","%%instrument viola","V:Vc clef=bass","%%instrument cello","[V:Vln1] d2 f2 | a4 |]","[V:Vln2] A2 d2 | f4 |]","[V:Vla] F2 A2 | d4 |]","[V:Vc] D,2 D,2 | D,4 |]"])}
-<p>Names you can use: <code>violin</code>, <code>viola</code>, <code>cello</code>, <code>double-bass</code>, <code>flute</code>, <code>oboe</code>, <code>clarinet</code>, <code>bassoon</code>, <code>piano</code>, <code>harpsichord</code>, <code>clavichord</code>, <code>electric-piano</code>, <code>guitar</code>, <code>steel-guitar</code>, <code>pizzicato-strings</code>, <code>vibraphone</code>, <code>marimba</code>, <code>xylophone</code>, <code>synth</code>. Put it in the tune header, before any <code>V:</code>, to set the whole tune. An unknown name shows as a warning on its line.</p>
+<p>Names you can use: <code>violin</code>, <code>viola</code>, <code>cello</code>, <code>double-bass</code>, <code>flute</code>, <code>oboe</code>, <code>clarinet</code>, <code>bassoon</code>, <code>piano</code>, <code>harpsichord</code>, <code>clavichord</code>, <code>electric-piano</code>, <code>guitar</code>, <code>steel-guitar</code>, <code>pizzicato-strings</code>, <code>vibraphone</code>, <code>marimba</code>, <code>xylophone</code>, and the synths <code>saw-lead</code> (or <code>synth</code>), <code>square-lead</code>, <code>sine-lead</code>, <code>chiptune</code>, <code>supersaw</code>, <code>synth-pluck</code>, <code>synth-brass</code>, <code>string-machine</code>, <code>warm-pad</code>, <code>sweep-pad</code>, <code>crystal-pad</code>, <code>fm-piano</code>, <code>fm-bells</code>, <code>organ</code>, <code>synth-bass</code>, <code>acid-bass</code>, <code>sub-bass</code>. Put it in the tune header, before any <code>V:</code>, to set the whole tune. An unknown name shows as a warning on its line.</p>
 <p><code>%%instrument</code> is a codeABC shorthand that becomes the standard <code>%%MIDI program</code> (violin is program 40), so MIDI exports carry each voice's instrument. You can also write <code>%%MIDI program</code> yourself — codeABC plays it with its nearest sound; program 0 means "not set".</p>
 <h3>Pizzicato and arco</h3>
 <p>For the violin, viola, cello and double bass, write <code>!pizz!</code> before a note to start plucking and <code>!arco!</code> to go back to the bow. They are engraved as <i>pizz.</i> and <i>arco</i> above the staff, and the usual text marks <code>"^pizz."</code> and <code>"^arco"</code> work the same way. Each voice keeps its own setting until told otherwise.</p>
@@ -3931,7 +4108,7 @@ ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] !ped!c2 e2 g
 <li>While the pedal is down, every note you release keeps ringing until the pedal lifts, exactly like a real damper pedal. Notes released before the pedal goes down are not caught.</li>
 <li>One pedal serves the whole tune, whichever voice the marking is written in — put it in the bass or the melody, whichever reads best.</li>
 <li>A <code>!ped!</code> with no <code>!ped-up!</code> holds to the end of the tune.</li>
-<li>It plays on instruments that have a pedal: <b>grand piano, electric piano, vibraphone and synthesizer</b>. Harpsichord, clavichord, guitar, pizzicato and the mallets ignore it, as the real ones would.</li>
+<li>It plays on instruments that have a pedal: <b>grand piano, electric piano, vibraphone and all the synthesizers and the organ</b>. Harpsichord, clavichord, guitar, pizzicato and the mallets ignore it, as the real ones would.</li>
 <li><code>+ped+</code> and <code>+ped-up+</code> work too. MIDI exports carry the pedal as controller 64, so DAWs and notation programs read it.</li>
 <li>Other ABC programs don't know these decorations: they will warn about them or skip them, but the rest of the tune still works.</li>
 </ul>
@@ -3989,7 +4166,12 @@ ${ex(["[K:D] [M:3/4] [Q:1/4=90]   % inline key, meter and tempo changes","% a ne
 <tr><td><b>Bassoon</b></td><td>Real solo bassoon recordings, down to low B♭1</td><td>—</td></tr>
 <tr><td><b>Vibraphone</b></td><td>2 velocity layers; damped on release unless the pedal is down</td><td>yes</td></tr>
 <tr><td><b>Marimba</b>, <b>Xylophone</b></td><td>2 velocity layers; bars ring out naturally</td><td>—</td></tr>
-<tr><td><b>Synthesizer</b></td><td>Generated live: two detuned sawtooth oscillators and a sub-octave square through a resonant filter</td><td>yes</td></tr>
+<tr><td><b>Synthesizers</b></td><td>Generated live, so they need no download and hold any note for as long as it lasts. Band-limited oscillators (clean at every pitch), stereo unison, resonant filters with their own envelopes, vibrato, FM and analogue-style drive. Playing louder (<code>!f!</code>, <code>!ff!</code>) also opens the filter, so loud notes are brighter; on the acid bass it adds squelch.</td><td>yes</td></tr>
+<tr><td>Leads</td><td><b>Saw lead</b> (fat, detuned, with a sub), <b>Square lead</b> (hollow), <b>Sine lead</b> (soft, theremin-like), <b>Chiptune</b> (8-bit pulse)</td><td>yes</td></tr>
+<tr><td>Chords</td><td><b>Supersaw</b> (seven saws across the stereo field), <b>Synth pluck</b> (short, for arpeggios), <b>Synth brass</b> (80s poly brass), <b>String machine</b> (vintage chorused string ensemble)</td><td>yes</td></tr>
+<tr><td>Pads</td><td><b>Warm pad</b> (slow and soft), <b>Sweep pad</b> (resonant filter sweeping across the tune), <b>Crystal pad</b> (FM bell shimmer)</td><td>yes</td></tr>
+<tr><td>FM &amp; organ</td><td><b>FM electric piano</b> (the classic 80s tine piano), <b>FM bells</b> (ring out), <b>Drawbar organ</b> (tonewheel organ with key click and rotary speaker)</td><td>yes</td></tr>
+<tr><td>Basses</td><td><b>Analogue bass</b> (round and punchy), <b>Acid bass</b> (squelchy resonant filter), <b>Sub bass</b> (deep sine); they sound as written, so write them in the bass clef</td><td>yes</td></tr>
 </table>
 <p>Recorded instruments are sampled at least every minor third (the steel-string guitar every semitone), so no note is pitch-shifted by more than a semitone and a half, and each sample is corrected by its measured tuning. On the guitars a softer note is also a darker one, and low strings sit slightly left of high ones in the stereo picture. All play in stereo at 44.1 kHz through the concert hall reverb. Dynamics (<code>!p!</code>, <code>!f!</code>, accents) change the volume and, on instruments with layers, switch to a softer or harder recording so the tone changes too.</p>
 <p>An instrument's samples download the first time you play it (1–3 MB each, the piano about 3 MB per layer), then they are cached; Settings → Score → <i>Keep all instruments for offline use</i> fetches everything at once.</p>
@@ -4056,7 +4238,7 @@ ${row(K("[")+K("{")+K('"'),"Close themselves; type the closer to step over it",1
 <li>Piano: <b>Salamander Grand Piano V3</b> by Alexander Holm — CC BY 3.0 (MP3 conversions by Jan Forst, MIT).</li>
 <li>Violin, cello, double bass, flute, clarinet and bassoon: solo recordings from <b>tonejs-instruments</b> (MIT). Oboe, the bassoon's lowest notes, viola section and violin/cello pizzicato: <b>VSCO-2 Community Edition</b> by Sam Gossner (CC0), via tiny-orchestra.</li>
 <li>Guitars: recordings from <b>tonejs-instruments</b> (MIT); the double bass pizzicato, the steel guitar's top notes and the harpsichord, electric piano, pizzicato strings, vibraphone, marimba and xylophone: <b>GeneralUser GS</b> by S. Christian Collins, rendered to samples with spessasynth.</li>
-<li>Clavichord: a physical model written for codeABC. Synthesizer: generated live with Web Audio.</li>
+<li>Clavichord: a physical model written for codeABC. Synthesizers and organ: generated live with Web Audio by codeABC's own synth engine.</li>
 <li>PDF: <b>jsPDF</b> and <b>svg2pdf.js</b> — MIT licence.</li>
 <li>ABC notation standard by Chris Walshaw and the ABC community — abcnotation.com.</li>
 </ul>`}
