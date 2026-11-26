@@ -573,7 +573,7 @@ div.wprobe{height:auto;}
 #tpSeek{flex:1;min-width:40px;width:auto;}
 #tpInfo{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;}
 #tpInfo b{color:var(--accent);font-weight:700;}
-.tp-tempo{display:flex;align-items:center;gap:6px;flex:none;font-size:10.5px;color:var(--muted);}
+.tp-tempo{display:flex;align-items:center;gap:6px;flex:none;font-size:10.5px;color:var(--muted);margin-left:10px;padding-left:12px;border-left:1px solid var(--border);}
 .tp-tempo input{width:84px;}
 #tpTempoVal{color:var(--accent);min-width:34px;text-align:right;font-variant-numeric:tabular-nums;}
 #tpTune{appearance:none;-webkit-appearance:none;background:var(--raised);border:1px solid var(--border);border-radius:8px;font-size:10.5px;color:var(--text);padding:5px 20px 5px 8px;max-width:150px;}
@@ -704,7 +704,7 @@ html.paper #score .tab-knock{fill:var(--paper,#fff);}
 .dlg-btns .primary{height:32px;font-size:12px;}
 
 /* ---------- information ---------- */
-.info{width:min(760px,94vw);height:min(720px,88dvh);display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.55);animation:popIn .18s ease;overflow:hidden;}
+.infobox{width:min(760px,94vw);height:min(720px,88dvh);display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.55);animation:popIn .18s ease;overflow:hidden;}
 .info-head{flex:none;display:flex;align-items:center;gap:10px;padding:12px 12px 0 18px;}
 .info-head h2{flex:1;font-size:15px;display:flex;align-items:baseline;gap:7px;}
 .info-head h2 .pr{color:var(--accent);text-shadow:var(--glow);}
@@ -768,8 +768,8 @@ html.paper #score .tab-knock{fill:var(--paper,#fff);}
   .ib.tabtg span:last-child{display:none;}
   .ib.tabtg{padding:0;width:33px;}
   .ib.inst{padding:0;width:33px;}
-  #transport{flex-wrap:wrap;row-gap:4px;}
-  .tp-tempo{order:9;flex:1 1 100%;padding-left:50px;}
+  .tp-mid .tp-row:first-child{flex-wrap:wrap;row-gap:6px;}
+  .tp-tempo{flex:1 1 100%;margin-left:0;padding-left:0;border-left:none;}
   .tp-tempo input{flex:1;width:auto;}
   .seg button{padding:5px 9px;}
   #stTheme,#stBars,.st-left .st-sep:last-of-type{display:none;}
@@ -922,13 +922,13 @@ html.paper #score .tab-knock{fill:var(--paper,#fff);}
               <span class="tp-time" id="tpCur">0:00</span>
               <input type="range" id="tpSeek" min="0" max="1000" step="1" value="0" aria-label="Playback position">
               <span class="tp-time r" id="tpDur">0:00</span>
+              <div class="tp-tempo" title="Tempo (⌘⇧↑ / ⌘⇧↓)"><span class="tlab">tempo</span><input type="range" id="tpTempo" min="40" max="200" step="5" value="100" aria-label="Tempo"><span id="tpTempoVal">100%</span></div>
             </div>
             <div class="tp-row">
               <span id="tpInfo">grand piano</span>
               <span class="selwrap" id="tpTuneWrap" hidden><select id="tpTune" aria-label="Tune to play"></select></span>
             </div>
           </div>
-          <div class="tp-tempo" title="Tempo (⌘⇧↑ / ⌘⇧↓)"><span class="tlab">tempo</span><input type="range" id="tpTempo" min="40" max="200" step="5" value="100" aria-label="Tempo"><span id="tpTempoVal">100%</span></div>
           <button id="tpLoop" class="ib" type="button" aria-label="Loop" title="Loop (⌘⇧L)"></button>
           <button id="tpExport" class="ib" type="button" aria-label="Export" title="Export .abc · PDF · .midi · .wav"></button>
         </div>
@@ -1054,7 +1054,7 @@ html.paper #score .tab-knock{fill:var(--paper,#fff);}
 </div>
 
 <div id="infoWrap" hidden>
-  <div class="info" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+  <div class="infobox" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
     <div class="info-head">
       <h2 id="infoTitle"><span class="pr">❯</span>How to use codeABC</h2>
       <button id="infoClose" class="ib" type="button" aria-label="Close"></button>
