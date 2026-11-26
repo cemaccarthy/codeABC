@@ -19,3 +19,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 **This text is from: http://opensource.org/licenses/MIT**
+
+---
+codeABC note: vendor/abcjs-basic-min.js is abcjs 6.7.3 with one change: the string-tablature plugin
+reads two optional parameters, `linePitch` (spacing of tab lines, default 3) and `tabBig`, so codeABC can
+draw guitar tablature exactly as tall as a five-line staff.

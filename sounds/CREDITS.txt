@@ -1,5 +1,8 @@
 Instrument samples for codeABC
-Harpsichord, electric piano, classical guitar, pizzicato strings, vibraphone, marimba, xylophone:
+Classical (nylon) and steel-string guitar: real recordings from tonejs-instruments (Makefully-Studios/tonejs-instruments,
+  MIT licence), trimmed to the attack, faded, normalised and renamed by MIDI note. The steel guitar's notes above D5
+  are rendered from GeneralUser GS (program 25) and level-matched.
+Harpsichord, electric piano, pizzicato strings, vibraphone, marimba, xylophone:
   rendered note by note from GeneralUser GS v1.471 by S. Christian Collins (http://www.schristiancollins.com),
   licence in GeneralUser-GS-LICENSE.txt. Rendered with spessasynth_core at 44.1 kHz stereo, with the
   soundfont's reverb and chorus off, then encoded as VBR MP3 (about 190 kbps).
