@@ -1760,7 +1760,7 @@ function renderScore(force){
     }else scoreVis=ABCJS.renderAbc([...scoreEl.children],prep.text,scoreOptions(w,{responsive:undefined,oneSvgPerLine:true}));
     /* every system is its own SVG, tidied and then cropped to what it holds, so a lifted slur or
        a moved articulation can never run into the title or the next system */
-    fixArticulations(scoreEl);fixMarcatos(scoreEl);fixSlurs(scoreEl);
+    fixArticulations(scoreEl);fixMarcatos(scoreEl);fixSlurs(scoreEl);fixTexts(scoreEl);
     layoutSystems(scoreEl,true);
   }
   catch(e){console.error(e);scoreVis=[];scoreEl.innerHTML=`<p class="sc-empty">This ABC couldn’t be engraved: ${esc(e.message||e)}</p>`;}
@@ -2108,7 +2108,7 @@ function syncInstUI(){
    +ped-up+ work too). abcjs doesn't know them, so before engraving they become "Ped." / "*"
    annotations under the staff; a position map turns every character position abcjs reports
    back into a position in your own text. */
-const PED_RX=/!ped(-up)?!|\+ped(-up)?\+|!pizz!|\+pizz\+|!arco!|\+arco\+|^%%instrument\b[^\n]*/gim;
+const PED_RX=/!-!|!ped(-up)?!|\+ped(-up)?\+|!pizz!|\+pizz\+|!arco!|\+arco\+|^%%instrument\b[^\n]*/gim;
 let prepCache={src:null,res:null};
 function prepAbc(src){
   if(prepCache.src===src)return prepCache.res;
@@ -2117,7 +2117,8 @@ function prepAbc(src){
   while(m=PED_RX.exec(src)){
     out+=src.slice(last,m.index);
     let rep,kind,up=false;const t=m[0].toLowerCase();
-    if(t.startsWith("%%")){
+    if(t==="!-!"){rep="!tenuto!";kind="ten";}
+    else if(t.startsWith("%%")){
       /* %%instrument violin → the standard %%MIDI program 40, so abcjs gives that voice the program */
       const name=t.replace(/^%%instrument\s*/,"").replace(/%.*$/,"").trim().replace(/[\s_]+/g,"-");
       const prog=INST_NAMES[name];kind="inst";
@@ -2240,6 +2241,31 @@ function fixMarcatos(root){
    · if a notehead, stem, beam or flag would poke through, the arch grows evenly (never one end
      alone); only if that isn't enough does the whole curve move away from the notes */
 function cls1(c,re){const m=String(c||"").match(re);return m?m[1]:null;}
+/* Text above the staff (tempo, part labels, "^text" annotations) is placed by abcjs before slurs
+   are redrawn, so a slur can run straight through it. Each text is lifted until it clears every
+   slur (and every text already lifted) beneath it, lowest first. */
+function fixTexts(root){
+  root.querySelectorAll("svg").forEach(svg=>{
+    const slurs=[...svg.querySelectorAll("path.abcjs-slur")];if(!slurs.length)return;
+    const tops=[];svg.querySelectorAll("g.abcjs-staff").forEach(gr=>{const u=staffLinesOf(gr);if(u.length>=5)tops.push(u[0]);});
+    if(!tops.length)return;
+    const pts=[];
+    slurs.forEach(pa=>{try{const L=pa.getTotalLength();for(let i=0;i<=60;i++){const q=pa.getPointAtLength(L*i/60);pts.push([q.x,q.y]);}}catch(_){}});
+    const texts=[...svg.querySelectorAll(".abcjs-tempo, .abcjs-part, text.abcjs-annotation, .abcjs-annotation text")].filter((el,i,a)=>!a.some(o=>o!==el&&o.contains(el)))
+      .map(el=>{const b=pathBox(el);return b&&{el,b};}).filter(t=>t&&tops.some(y=>t.b.y1<=y+2&&y-t.b.y1<80))
+      .sort((a,b)=>b.b.y1-a.b.y1);
+    const pad=3;
+    texts.forEach(({el,b})=>{
+      const top=tops.reduce((a,y)=>y>=b.y1-2&&(a==null||y<a)?y:a,null);
+      let dy=0;
+      for(const[x,y]of pts)if(x>=b.x0-2&&x<=b.x1+2&&y<=top+1&&y<b.y1+pad)dy=Math.max(dy,b.y1+pad-y);
+      if(dy<=.2)return;
+      dy=+dy.toFixed(2);
+      el.setAttribute("transform",((el.getAttribute("transform")||"")+` translate(0 ${-dy})`).trim());
+      for(let x=b.x0;x<=b.x1;x+=2)pts.push([x,b.y0-dy]);
+    });
+  });
+}
 function fixSlurs(root){
   root.querySelectorAll("svg").forEach(svg=>{
     const paths=[...svg.querySelectorAll("path.abcjs-slur")];if(!paths.length)return;
@@ -3010,7 +3036,7 @@ async function exportPDF(ids){
       const popt={oneSvgPerLine:true,staffwidth:Math.round(cw/px2pt)-2,paddingleft:1,paddingright:1,paddingtop:2,paddingbottom:2,foregroundColor:"#000000",add_classes:true,jazzchords:true};
       if(tabOn()){const gs=guitarSetup(src),it=curInst();[...holder.children].forEach((div,i)=>ABCJS.renderAbc(div,prepAbc(src).text,{...popt,startingTune:i,tablature:tabParams(gs,i,it)}));fixTabs(holder,paper);}
       else ABCJS.renderAbc([...holder.children],prepAbc(src).text,popt);
-      fixArticulations(holder);fixMarcatos(holder);fixSlurs(holder);
+      fixArticulations(holder);fixMarcatos(holder);fixSlurs(holder);fixTexts(holder);
       layoutSystems(holder,false);
       for(const tdiv of holder.children){
         const svgs=[...tdiv.querySelectorAll("svg")];
@@ -3876,7 +3902,7 @@ ${ex(["|  ||  |]  [|           % bar, double bar, final bar, thick-thin","|: A B
 <h3>Chords</h3>
 ${ex(["[CEG]2 [DFA]2          % notes played together","\"C\"CEG \"G7\"GBd           % chord symbols above the staff (they are played too)","\"^Allegro\"c4           % annotation: ^ above, _ below, < left, > right"])}
 <h3>Tuplets, grace notes, ornaments</h3>
-${ex(["(3ABc (3:2:4ABcd      % triplet; general tuplet","{g}A {/g}A {gag}A     % grace notes and acciaccatura","~A .A !trill!A !fermata!A !>!A   % roll, staccato, trill, fermata, accent","!p! !mp! !mf! !f! !ff! % dynamics — they change which piano layer plays"])}
+${ex(["(3ABc (3:2:4ABcd      % triplet; general tuplet","{g}A {/g}A {gag}A     % grace notes and acciaccatura","~A .A !trill!A !fermata!A !>!A   % roll, staccato, trill, fermata, accent","!tenuto!A !-!A        % tenuto — !-! is codeABC shorthand for !tenuto!","!p! !mp! !mf! !f! !ff! % dynamics — they change which piano layer plays"])}
 <h3>Lyrics</h3>
 ${ex(["G G A B | c2 B2 |","w:Twin-kle twin-kle lit-tle star","% - splits a word, _ holds a syllable, * skips a note, | jumps to the next bar"])}
 <h3>Several voices</h3>
