@@ -15,3 +15,6 @@ Violin, cello and double bass (bowed): solo recordings from tonejs-instruments (
 Viola (bowed) and violin/cello pizzicato: VSCO-2 Community Edition by Sam Gossner (CC0), via the tiny-orchestra
   package; the viola looped the same way. Viola pizzicato uses the violin pizzicato, and the cello's below G3.
 Double bass pizzicato: GeneralUser GS "Acoustic Bass" (a plucked upright bass), rendered with spessasynth.
+Flute, clarinet, bassoon: solo recordings from tonejs-instruments (MIT), WAV originals, looped and encoded as
+  the bowed strings are. Oboe and the bassoon's lowest notes (B-flat1, C-sharp2, F2): VSCO-2 Community Edition (CC0),
+  via tiny-orchestra, looped the same way.
