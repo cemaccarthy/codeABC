@@ -1821,10 +1821,10 @@ const INSTR=[
    layers:[90,120],ref:{90:88,120:118},pick:v=>v<=108?90:120,pitches:P3(28,100),pedal:true,dyn:1.2,gain:0.075,rel:p=>p<60?.4:.3},
   {id:"guitar",name:"Classical guitar",short:"Guitar",gm:24,desc:"Recorded nylon-string guitar · tablature",
    layers:[100],ref:{100:96},pitches:[35, 38, 40, 42, 44, 45, 47, 49, 50, 52, 54, 55, 57, 59, 61, 63, 64, 66, 68, 69, 71, 73, 74, 76, 78, 79, 80, 81, 82],pedal:false,dyn:1.1,gain:.3,rel:p=>p<52?.3:.22,
-   tab:true,soft:true,spread:true},
+   tab:true,soft:true,spread:true,oct:-12},
   {id:"steel",name:"Steel-string guitar",short:"Steel",gm:25,desc:"Recorded acoustic guitar, every semitone · tablature",
    layers:[100],ref:{100:96},pitches:[38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 77, 80, 83, 86, 89],pedal:false,dyn:1.1,gain:.55,rel:p=>p<52?.32:.24,
-   tab:true,soft:true,spread:true},
+   tab:true,soft:true,spread:true,oct:-12},
   {id:"pizzicato",name:"Pizzicato strings",short:"Pizz.",gm:45,desc:"Plucked string section · rings out",
    layers:[100],ref:{100:96},pitches:P3(28,97),pedal:false,ring:true,dyn:1.1,gain:0.3,rel:()=>.15},
   {id:"vibraphone",name:"Vibraphone",short:"Vibes",gm:11,desc:"Metal bars · damper pedal · 2 velocity layers",
@@ -1935,10 +1935,11 @@ function setChainLevels(c){
 const noteEnd=(it,n)=>it.pedal&&n.pe>n.e?n.pe:n.e;
 function voice(ctx,dest,n,when,warp,it){
   it=it||curInst();
-  const p=clamp(Math.round(n.p),0,127);
+  /* guitars sound an octave below the written note, as in all guitar music */
+  const p=clamp(Math.round(n.p+(it.oct||0)),0,127);
   const amp0=it.gain*clamp(Math.pow(Math.max(1,n.v)/(it.osc?90:it.ref[layerToUse(it,n.v)]||90),it.dyn),.25,1.55);
   const dur=Math.max(.04,(noteEnd(it,n)-n.s)/warp);
-  if(it.osc)return synthVoice(ctx,dest,n,when,when+dur,amp0);
+  if(it.osc)return synthVoice(ctx,dest,it.oct?{...n,p}:n,when,when+dur,amp0);
   const L=layerToUse(it,n.v);if(L===undefined)return null;
   const ps=it.pitches,s=ps.reduce((a,b)=>Math.abs(b-p)<Math.abs(a-p)?b:a,ps[0]);
   const buf=SND.buf[sndKey(it,L)].get(s);if(!buf)return null;
@@ -2073,7 +2074,8 @@ function parseTuningNote(tok){
   if(m)return 12*(+m[3]+1)+PC[m[1].toUpperCase()]+(/[#♯]/.test(m[2])?1:/[b♭]/.test(m[2])?-1:0);
   m=tok.match(/^(\^{1,2}|_{1,2}|=)?([A-Ga-g])([,']*)$/);
   if(m){
-    let v=60+PC[m[2].toUpperCase()]+(m[2]===m[2].toLowerCase()?12:0);
+    /* ABC names are written guitar pitch, an octave above the sound: E, A, D G B e is standard */
+    let v=48+PC[m[2].toUpperCase()]+(m[2]===m[2].toLowerCase()?12:0);
     for(const c of m[3])v+=c==="'"?12:-12;
     if(m[1])v+=m[1][0]==="^"?m[1].length:m[1][0]==="_"?-m[1].length:0;
     return v;
@@ -2124,7 +2126,7 @@ function tabParams(setup,ti,it){
   const t=setup.tunes[ti]||setup.tunes[0]||{midi:STD_TUNING,capo:0};
   const name=t.midi.map(m=>NOTE_TXT[m%12]).join(" ");
   const label=`${it.name} · ${t.named?name:"standard tuning"}${t.capo?` · capo ${t.capo}`:""}`;
-  const one={instrument:"guitar",tuning:t.midi.map(midiToAbc),capo:t.capo||undefined,label,firstStaffOnly:true,linePitch:1.6,tabBig:false};
+  const one={instrument:"guitar",tuning:t.midi.map(m=>midiToAbc(m+12)),capo:t.capo||undefined,label,firstStaffOnly:true,linePitch:1.6,tabBig:false};
   return Array.from({length:8},()=>({...one}));
 }
 const tabOn=()=>!!prefs.tab&&!!curInst().tab;
@@ -2502,7 +2504,7 @@ function exportMidi(){
     const ev=[{t:0,o:0,b:[192,it.gm]},{t:0,o:0,b:[176,7,110]},{t:0,o:0,b:[176,64,0]}];
     let end=0;
     for(const n of perf.notes){
-      const on=tick(n.s),off=Math.max(on+1,tick(n.e)),p=clamp(Math.round(n.p),0,127);
+      const on=tick(n.s),off=Math.max(on+1,tick(n.e)),p=clamp(Math.round(n.p+(it.oct||0)),0,127);
       ev.push({t:on,o:3,b:[144,p,clamp(Math.round(n.v),1,127)]},{t:off,o:1,b:[128,p,0]});
       end=Math.max(end,off);
     }
@@ -3475,6 +3477,8 @@ ${ex(["(3ABc (3:2:4ABcd      % triplet; general tuplet","{g}A {/g}A {gag}A     %
 ${ex(["G G A B | c2 B2 |","w:Twin-kle twin-kle lit-tle star","% - splits a word, _ holds a syllable, * skips a note, | jumps to the next bar"])}
 <h3>Several voices</h3>
 ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] d2 GA Bc | d2 G2 G2 |","[V:LH] [G,B,D]4 A,2 | B,6 |"])}
+<h3>Two voices on one staff</h3>
+<p>When two voices share a staff (with <code>%%score (1 2)</code>, or <code>&amp;</code> within a bar), the voice with stems up gets its articulations, ornaments and dynamics above the staff and the voice with stems down gets them below — staccatos, accents, tenutos, fermatas (inverted underneath), trills and markings like <code>!p!</code>. Put <code>%%ornament above</code> or <code>%%dynamic below</code> in a voice to override this.</p>
 <h3>Sustain pedal <span class="muted">— a codeABC extension</span></h3>
 <p>Standard ABC has no way to write the sustain (damper) pedal, so codeABC adds two decorations, written like any other <code>!…!</code> decoration straight before a note:</p>
 <table>
@@ -3498,15 +3502,16 @@ ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] !ped!c2 e2 g
 <table>
 <tr><th>Write</th><th>Means</th></tr>
 <tr><td><code>%%tuning DADGAD</code></td><td>Six letters; each string takes the octave nearest the standard one. Use <code>#</code> or <code>b</code> for sharps and flats: <code>%%tuning DADF#AD</code></td></tr>
-<tr><td><code>%%tuning D2 A2 D3 G3 A3 D4</code></td><td>Exact pitches (middle C is C4)</td></tr>
-<tr><td><code>%%tuning D, A, D G A d</code></td><td>ABC note names, as in the music</td></tr>
+<tr><td><code>%%tuning D2 A2 D3 G3 A3 D4</code></td><td>Exact sounding pitches of the strings (middle C is C4; standard tuning is E2 A2 D3 G3 B3 E4)</td></tr>
+<tr><td><code>%%tuning D, A, D G A d</code></td><td>ABC note names as the strings are <i>written</i> in guitar music, an octave above their sound (standard is <code>E, A, D G B e</code>)</td></tr>
 <tr><td><code>%%tuning drop-d</code></td><td>A named tuning: standard, drop-d, double-drop-d, dadgad, open-g, open-d, open-e, open-a, open-c, drop-c, drop-b, half-step-down, whole-step-down</td></tr>
 <tr><td><code>%%capo 2</code></td><td>A capo on fret 2 (0–12); fret numbers are counted from the capo</td></tr>
 </table>
 ${ex(["%%tuning DADGAD","%%capo 2","X:1","T:Celtic air","M:3/4","L:1/8","K:D","D2 A2 d2 | f3 e d2 | [D,A,DA]6 |]"])}
 <ul>
 <li>Before the first <code>X:</code> the tuning covers every tune in the file; inside a tune's header it covers just that tune.</li>
-<li>The tuning changes the fret numbers, not the notes: the music sounds as written. The label under the first tab line shows the tuning and capo in use.</li>
+<li>The tuning changes the fret numbers, not the notes. The label under the first tab line shows the tuning and capo in use.</li>
+<li>Like all guitar music, guitar parts are <b>written an octave above how they sound</b>: write in the treble clef as usual (the open low E string is <code>E,</code>, with ledger lines below the staff), and both guitar sounds play it an octave lower — in playback, WAV and MIDI exports alike.</li>
 <li>A tuning that can't be read shows up as a warning on its line.</li>
 <li>Other ABC programs read <code>%%tuning</code> and <code>%%capo</code> as unknown directives and skip them.</li>
 </ul>
@@ -3532,8 +3537,8 @@ ${ex(["[K:D] [M:3/4] [Q:1/4=90]   % inline key, meter and tempo changes","% a ne
 <tr><td><b>Harpsichord</b></td><td>Recorded multisamples (GeneralUser GS); like the real thing it has one volume, and notes stop when released</td><td>—</td></tr>
 <tr><td><b>Clavichord</b></td><td>A physical model of the real mechanism — two strings per key struck by a brass tangent, with the slight pitch rise of the tangent and a soundboard</td><td>—</td></tr>
 <tr><td><b>Electric piano</b></td><td>Tine electric piano, 2 velocity layers</td><td>yes</td></tr>
-<tr><td><b>Classical guitar</b></td><td>Real nylon-string guitar recordings, a sample about every whole tone, each note allowed to decay naturally</td><td>—</td></tr>
-<tr><td><b>Steel-string guitar</b></td><td>Real acoustic guitar recordings, one for every semitone from D2 to D5 (GeneralUser GS above that)</td><td>—</td></tr>
+<tr><td><b>Classical guitar</b></td><td>Real nylon-string guitar recordings, a sample about every whole tone, each note allowed to decay naturally. Like the real instrument's music, it sounds an octave below the written notes</td><td>—</td></tr>
+<tr><td><b>Steel-string guitar</b></td><td>Real acoustic guitar recordings, one for every semitone from D2 to D5 (GeneralUser GS above that); sounds an octave below the written notes</td><td>—</td></tr>
 <tr><td><b>Pizzicato strings</b></td><td>Plucked string section; notes ring out</td><td>—</td></tr>
 <tr><td><b>Vibraphone</b></td><td>2 velocity layers; damped on release unless the pedal is down</td><td>yes</td></tr>
 <tr><td><b>Marimba</b>, <b>Xylophone</b></td><td>2 velocity layers; bars ring out naturally</td><td>—</td></tr>

@@ -24,3 +24,6 @@ THE SOFTWARE.
 codeABC note: vendor/abcjs-basic-min.js is abcjs 6.7.3 with one change: the string-tablature plugin
 reads two optional parameters, `linePitch` (spacing of tab lines, default 3) and `tabBig`, so codeABC can
 draw guitar tablature exactly as tall as a five-line staff.
+Second change: when two or more voices share a staff, articulations, ornaments and dynamics follow the stem
+direction: the stems-up voice gets them above the staff, the stems-down voice below (explicit %%ornament /
+%%dynamic settings still win).
