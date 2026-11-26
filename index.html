@@ -1755,6 +1755,7 @@ function renderScore(force){
         clickListener:(el,_t,cls,an,dr,ev)=>onScoreClick(el,i,cls,an,dr,ev)}))[0]).filter(Boolean);
       fixTabs(scoreEl,null);
     }else scoreVis=ABCJS.renderAbc([...scoreEl.children],prep.text,scoreOptions(w));
+    fixArticulations(scoreEl);
   }
   catch(e){console.error(e);scoreVis=[];scoreEl.innerHTML=`<p class="sc-empty">This ABC couldn’t be engraved: ${esc(e.message||e)}</p>`;}
   scoreEl.querySelectorAll(".tune").forEach((d,i)=>{if(!d.querySelector("svg"))d.remove();});
@@ -2056,6 +2057,82 @@ function prepAbc(src){
   prepCache={src,res};
   return res;
 }
+/* ============================== TWO VOICES ON ONE STAFF ==============================
+   abcjs places articulations before it knows where beams will fall, so on a shared staff they can
+   end up between a notehead and its beam, or touching the stem. After engraving, each note's
+   articulations are pushed out past its own stem tip (and the beam's outer edge) and outside the
+   staff — above for the stems-up voice, below for the stems-down voice — stacked in order. */
+function nums(d){return(String(d||"").match(/-?\d*\.?\d+(?:e-?\d+)?/g)||[]).map(Number);}
+function pathBox(el){
+  try{const b=el.getBBox();if(b&&(b.width||b.height))return{x0:b.x,x1:b.x+b.width,y0:b.y,y1:b.y+b.height};}catch(_){}
+  return null;
+}
+function fixArticulations(root){
+  root.querySelectorAll("svg").forEach(svg=>{
+    /* five-line staves with their vertical extent */
+    const staves=[];
+    svg.querySelectorAll("g.abcjs-staff").forEach(gr=>{
+      const ys=[];gr.querySelectorAll(":scope > path").forEach(pa=>{const n=nums(pa.getAttribute("d"));if(n.length>=4&&Math.abs(n[1]-n[3])<.6&&Math.abs(n[2]-n[0])>40)ys.push(n[1]);});
+      const u=[...new Set(ys.map(y=>Math.round(y*10)/10))].sort((a,b)=>a-b);
+      if(u.length===5)staves.push({top:u[0],bot:u[4],voices:new Set(),notes:[]});
+    });
+    if(!staves.length)return;
+    /* beam outlines: y of the top and bottom edge at any x */
+    const beams=[];
+    svg.querySelectorAll(".abcjs-beam-elem").forEach(be=>{(be.tagName==="path"?[be]:[...be.querySelectorAll("path")]).forEach(pa=>{
+      const n=nums(pa.getAttribute("d"));if(n.length<8)return;
+      const pts=[];for(let i=0;i+1<n.length;i+=2)pts.push([n[i],n[i+1]]);
+      const x0=Math.min(...pts.map(q=>q[0])),x1=Math.max(...pts.map(q=>q[0]));
+      beams.push({x0,x1,at:x=>{const ys=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];if((x-a[0])*(x-b[0])<=0&&a[0]!==b[0])ys.push(a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0]));}return ys.length?[Math.min(...ys),Math.max(...ys)]:null;}});
+    });});
+    svg.querySelectorAll("g.abcjs-note").forEach(g=>{
+      const heads=[...g.querySelectorAll(":scope > .abcjs-notehead")].map(pathBox).filter(Boolean);
+      const stemEl=g.querySelector(":scope > .abcjs-stem");
+      if(!heads.length||!stemEl)return;
+      const H={x0:Math.min(...heads.map(b=>b.x0)),x1:Math.max(...heads.map(b=>b.x1)),y0:Math.min(...heads.map(b=>b.y0)),y1:Math.max(...heads.map(b=>b.y1))};
+      const cy=(H.y0+H.y1)/2;
+      let st=null,bd=Infinity;for(const s of staves){const d=cy<s.top?s.top-cy:cy>s.bot?cy-s.bot:0;if(d<bd){bd=d;st=s;}}
+      if(!st||bd>60)return;
+      const v=(g.getAttribute("class")||"").match(/abcjs-v(\d+)/);
+      st.voices.add(v?v[1]:"0");st.notes.push({g,H,stemEl});
+    });
+    staves.filter(s=>s.voices.size>1).forEach(s=>s.notes.forEach(({g,H,stemEl})=>{
+      const sn=nums(stemEl.getAttribute("d")),sx=sn[0],sy=[sn[1],sn[3]];
+      const hc=(H.y0+H.y1)/2,up=hc-Math.min(...sy)>Math.max(...sy)-hc;   /* the stem runs further on its own side, chords included */
+      let tip=up?Math.min(...sy):Math.max(...sy);
+      for(const bm of beams){if(sx<bm.x0-1||sx>bm.x1+1)continue;const r=bm.at(sx);if(!r)continue;
+        if(up&&r[1]<=hc&&Math.abs(r[1]-tip)<14)tip=Math.min(tip,r[0]);
+        if(!up&&r[0]>=hc&&Math.abs(r[0]-tip)<14)tip=Math.max(tip,r[1]);}
+      const hcx=(H.x0+H.x1)/2,hw=H.x1-H.x0;
+      const decos=[];
+      g.querySelectorAll(":scope > path:not([class])").forEach(el=>{
+        const b=pathBox(el);if(!b)return;
+        const cx=(b.x0+b.x1)/2;
+        if(Math.abs(cx-hcx)>hw*.9)return;                                     /* accidentals, dots, up-flags */
+        if(b.y1>H.y0-.5&&b.y0<H.y1+.5)return;                                  /* level with the head */
+        if(b.y1-b.y0>6&&b.x0<=sx+.6&&b.x1>=sx-.6&&b.y0>=Math.min(...sy)-2&&b.y1<=Math.max(...sy)+2)return;   /* a flag */
+        decos.push({el,b});
+      });
+      if(!decos.length)return;
+      const pad=2.2;
+      if(up){
+        let limit=Math.min(tip,s.top)-pad;
+        decos.sort((a,b)=>b.b.y1-a.b.y1).forEach(d=>{
+          const dy=d.b.y1>limit?limit-d.b.y1:0;
+          if(dy)d.el.setAttribute("transform",`translate(0 ${dy.toFixed(2)})`);
+          limit=d.b.y0+dy-1.6;
+        });
+      }else{
+        let limit=Math.max(tip,s.bot)+pad;
+        decos.sort((a,b)=>a.b.y0-b.b.y0).forEach(d=>{
+          const dy=d.b.y0<limit?limit-d.b.y0:0;
+          if(dy)d.el.setAttribute("transform",`translate(0 ${dy.toFixed(2)})`);
+          limit=d.b.y1+dy+1.6;
+        });
+      }
+    }));
+  });
+}
 /* ============================== GUITAR TABLATURE & TUNING (codeABC extension) ==============================
    %%tuning sets the six strings, low to high, for the tablature shown under the staff:
      %%tuning DADGAD            letters (octaves are chosen like a guitar's)
@@ -2126,7 +2203,7 @@ function tabParams(setup,ti,it){
   const t=setup.tunes[ti]||setup.tunes[0]||{midi:STD_TUNING,capo:0};
   const name=t.midi.map(m=>NOTE_TXT[m%12]).join(" ");
   const label=`${it.name} · ${t.named?name:"standard tuning"}${t.capo?` · capo ${t.capo}`:""}`;
-  const one={instrument:"guitar",tuning:t.midi.map(m=>midiToAbc(m+12)),capo:t.capo||undefined,label,firstStaffOnly:true,linePitch:1.6,tabBig:false};
+  const one={instrument:"guitar",tuning:t.midi.map(m=>midiToAbc(m+12)),capo:t.capo||undefined,label,firstStaffOnly:true,linePitch:2,tabBig:false};
   return Array.from({length:8},()=>({...one}));
 }
 const tabOn=()=>!!prefs.tab&&!!curInst().tab;
@@ -2614,6 +2691,7 @@ async function exportPDF(ids){
       const popt={oneSvgPerLine:true,staffwidth:Math.round(cw/px2pt)-2,paddingleft:1,paddingright:1,paddingtop:2,paddingbottom:2,foregroundColor:"#000000",add_classes:true,jazzchords:true};
       if(tabOn()){const gs=guitarSetup(src),it=curInst();[...holder.children].forEach((div,i)=>ABCJS.renderAbc(div,prepAbc(src).text,{...popt,startingTune:i,tablature:tabParams(gs,i,it)}));fixTabs(holder,paper);}
       else ABCJS.renderAbc([...holder.children],prepAbc(src).text,popt);
+      fixArticulations(holder);
       for(const tdiv of holder.children){
         const svgs=[...tdiv.querySelectorAll("svg")];
         if(!svgs.length)continue;
@@ -3497,7 +3575,7 @@ ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] !ped!c2 e2 g
 <li>Other ABC programs don't know these decorations: they will warn about them or skip them, but the rest of the tune still works.</li>
 </ul>
 <h3>Guitar tablature &amp; tunings <span class="muted">— a codeABC extension</span></h3>
-<p>Choose <b>Classical guitar</b> or <b>Steel-string guitar</b> with ♫, then tap <b>TAB</b> in the top bar (${K("⌘⇧G")}). A six-line tablature staff, exactly as tall and wide as the music staff, appears under every staff, with fret numbers on the strings; tap TAB again to hide it. It is included in PDF exports while it is on.</p>
+<p>Choose <b>Classical guitar</b> or <b>Steel-string guitar</b> with ♫, then tap <b>TAB</b> in the top bar (${K("⌘⇧G")}). A six-line tablature staff, as wide as the music staff and with the same space between its lines, appears under every staff, with fret numbers on the strings; tap TAB again to hide it. It is included in PDF exports while it is on.</p>
 <p>Without anything else the tab uses <b>standard tuning</b> (E A D G B E). To use another, put a <code>%%tuning</code> line at the start of the score, listing the six strings from low to high, in any of these forms:</p>
 <table>
 <tr><th>Write</th><th>Means</th></tr>

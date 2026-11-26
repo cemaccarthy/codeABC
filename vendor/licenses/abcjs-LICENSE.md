@@ -27,3 +27,4 @@ draw guitar tablature exactly as tall as a five-line staff.
 Second change: when two or more voices share a staff, articulations, ornaments and dynamics follow the stem
 direction: the stems-up voice gets them above the staff, the stems-down voice below (explicit %%ornament /
 %%dynamic settings still win).
+Third change: a marcato placed below the staff uses the downward-pointing glyph.
