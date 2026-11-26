@@ -28,3 +28,4 @@ Second change: when two or more voices share a staff, articulations, ornaments a
 direction: the stems-up voice gets them above the staff, the stems-down voice below (explicit %%ornament /
 %%dynamic settings still win).
 Third change: a marcato placed below the staff uses the downward-pointing glyph.
+Fourth change: none further to layout; the earlier tab-gap experiment was reverted. Marcato mirroring, slur clearance and system cropping are done in codeABC after engraving.
