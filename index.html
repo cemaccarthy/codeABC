@@ -1883,7 +1883,7 @@ const INSTR=[
   {id:"sub-bass",name:"Sub bass",short:"Sub",gm:87,grp:"Synths",desc:"Deep, clean sine sub bass with a touch of warmth",osc:true,layers:[],pedal:true,dyn:.8,gain:.1}
 ];
 const INST_GRPS=["Keyboards","Guitars","Strings","Woodwinds","Mallets","Synths"];
-INSTR.forEach(it=>{if(!it.grp)it.grp=/^(guitar|steel)$/.test(it.id)?"Guitars":/^(violin|viola|cello|bass|pizzicato)/.test(it.id)?"Strings":/^(flute|oboe|clarinet|bassoon)$/.test(it.id)?"Woodwinds":/^(vibraphone|marimba|xylophone)$/.test(it.id)?"Mallets":"Keyboards";});
+INSTR.forEach(it=>{if(!it.grp)it.grp=/^(guitar|steel)$/.test(it.id)?"Guitars":/^(violin|viola|cello|bass|pizzicato)(pizz)?$/.test(it.id)?"Strings":/^(flute|oboe|clarinet|bassoon)$/.test(it.id)?"Woodwinds":/^(vibraphone|marimba|xylophone)$/.test(it.id)?"Mallets":"Keyboards";});
 INSTR.forEach(it=>{if(!it.path)it.path=(L,p)=>`sounds/${it.id}/v${L}/${p}.mp3`;if(!it.pick)it.pick=()=>it.layers[0];});
 const instOf=id=>INSTR.find(i=>i.id===id)||INSTR[0];
 /* General MIDI programs (from %%MIDI program, or %%instrument) → the nearest codeABC sound.
