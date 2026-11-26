@@ -853,7 +853,7 @@ html.paper #score .tab-knock{fill:var(--paper,#fff);}
         <button data-mode="score" data-sfx role="tab" aria-label="Rendered score and playback"><span class="sgi"></span><span>Score</span></button>
       </div>
       <button id="btnInst" class="ib inst" type="button" aria-label="Choose instrument"><span id="instIco"></span><span id="instLabel">Piano</span></button>
-      <button id="btnTab" class="ib tabtg" type="button" aria-label="Guitar tablature" aria-pressed="false" hidden><span id="tabIco"></span><span>TAB</span></button>
+      <button id="btnTab" class="ib tabtg" type="button" aria-label="Tablature" aria-pressed="false" hidden><span id="tabIco"></span><span>TAB</span></button>
       <button id="btnInfo" class="ib" aria-label="How to use codeABC" title="How to use codeABC (⌘I)"></button>
       <button id="btnPdf" class="ib" aria-label="Export sheet music as PDF" title="Export sheet music as PDF (⌘⇧P)"></button>
       <button id="btnSettings" class="ib" aria-label="Settings" title="Settings"></button>
@@ -1751,7 +1751,7 @@ function renderScore(force){
   const count=tuneCountOf(src);
   scoreEl.innerHTML=Array.from({length:count},(_,i)=>`<div class="tune" data-t="${i}"></div>`).join("");
   const st=scoreScroll.scrollTop;
-  const prep=prepAbc(src),gs=guitarSetup(src);
+  const prep=prepAbc(src),gs=guitarSetup(src,curInst());
   try{
     if(tabOn()){
       /* one tune at a time, so each can have its own tuning and capo */
@@ -1788,7 +1788,7 @@ function showWarnings(ws){
 const lintSoon=debounce(()=>{
   const n=activeNote();if(!n||!hasABC()||ui.mode!=="write")return;
   try{const prep=prepAbc(n.content),vis=parseAll(prep.text);computeLineStarts(n.content);
-    const ws=warningsOf(vis,n.content,prep).concat(guitarSetup(n.content).errs,prep.errs);showWarnings(ws);
+    const ws=warningsOf(vis,n.content,prep).concat(guitarSetup(n.content,curInst()).errs,prep.errs);showWarnings(ws);
     linesEl.querySelectorAll(".ln").forEach((el,i)=>el.classList.toggle("err",errLines.has(i)));
   }catch(e){}
 },700);
@@ -1817,7 +1817,7 @@ function onScoreClick(abcelem,tuneNumber,classes){
    · Clavichord: a physical model of two tangent-struck strings and a soundboard, rendered to samples.
    · Synthesizers and the organ: generated live by the synth engine below (SYN). */
 const P3=(a,b)=>{const r=[];for(let p=a;p<=b;p+=3)r.push(p);return r;};
-const TUNING={"clavichord":{"v100_78":2.7,"v100_81":3.7,"v100_84":3.4,"v100_87":-1.3},"epiano":{"v120_28":-6.8,"v120_31":-1.5,"v120_34":-1.2,"v120_37":-3.2,"v120_40":-2.4,"v120_43":-1.5,"v120_46":-1.2,"v120_49":-1.9,"v120_52":-1.3,"v120_55":-1.5,"v120_58":-1.2,"v120_67":-1.0,"v120_73":-1.3,"v90_28":2.0,"v90_31":2.2,"v90_34":-1.2,"v90_40":-2.4,"v90_43":-1.5,"v90_46":-2.8,"v90_49":-3.2,"v90_52":-2.4,"v90_55":-1.5,"v90_58":-1.2,"v90_73":-1.3},"guitar":{"v100_52":-4.6,"v100_78":6.6,"v100_80":-2.1,"v100_81":-10.9,"v100_79":-5.6,"v100_61":-5.8,"v100_50":-4.4,"v100_38":-6.9,"v100_57":-7.4,"v100_35":-4.9,"v100_47":-1.9,"v100_42":-5.8,"v100_54":-6.8,"v100_40":-4.6,"v100_45":1.6,"v100_44":9.1,"v100_76":-4.1,"v100_68":-5.2,"v100_66":3.9,"v100_71":1.7,"v100_69":4.1,"v100_63":-4.0,"v100_73":11.4},"harpsichord":{"v100_29":-4.4,"v100_32":-4.8,"v100_35":-4.9,"v100_38":-2.0,"v100_41":3.8,"v100_44":2.2,"v100_47":1.0,"v100_53":1.8,"v100_56":4.8,"v100_59":3.9,"v100_62":3.6,"v100_65":2.8,"v100_68":3.9,"v100_71":3.2,"v100_74":3.3,"v100_77":3.3,"v100_80":3.5,"v100_83":3.7,"v100_86":4.3,"v100_89":4.3,"v100_92":4.3},"marimba":{"v120_45":1.6,"v120_48":3.0,"v120_51":4.2,"v120_54":5.9,"v120_57":5.7,"v120_60":6.5,"v120_63":6.5,"v120_66":7.3,"v120_69":7.4,"v120_72":7.5,"v120_75":7.0,"v120_78":6.8,"v120_81":6.5,"v120_84":6.5,"v120_87":6.3,"v120_90":6.1,"v120_93":6.2,"v120_96":6.5,"v90_39":-1.6,"v90_45":1.6,"v90_48":3.0,"v90_51":4.2,"v90_54":5.9,"v90_57":5.7,"v90_60":6.5,"v90_63":7.0,"v90_66":7.3,"v90_69":7.8,"v90_72":7.8,"v90_75":7.0,"v90_78":6.6,"v90_81":6.3,"v90_84":6.3,"v90_87":6.3,"v90_90":6.1,"v90_93":6.2,"v90_96":6.5},"pizzicato":{"v100_40":10.7,"v100_61":7.8,"v100_64":-10.7,"v100_70":-10.2,"v100_73":3.6,"v100_85":3.9,"v100_88":4.7,"v100_94":8.1,"v100_97":5.7},"vibraphone":{"v120_48":1.6,"v120_51":5.3,"v120_54":4.9,"v120_57":3.3,"v120_60":3.0,"v120_63":3.0,"v120_66":3.4,"v120_69":3.7,"v120_72":3.7,"v120_75":4.2,"v120_78":4.2,"v120_81":4.1,"v120_84":4.1,"v120_87":4.2,"v120_90":5.5,"v120_93":5.4,"v90_48":1.6,"v90_51":5.3,"v90_54":4.9,"v90_57":3.3,"v90_60":3.0,"v90_63":3.0,"v90_66":3.4,"v90_69":3.7,"v90_72":3.7,"v90_75":4.2,"v90_78":4.2,"v90_81":4.1,"v90_84":4.1,"v90_87":4.2,"v90_90":5.5,"v90_93":5.4},"xylophone":{"v120_107":-11.5,"v120_53":7.9,"v120_56":8.3,"v120_59":7.5,"v120_62":7.2,"v120_65":7.4,"v120_68":7.8,"v120_71":7.2,"v120_74":8.8,"v120_77":8.7,"v120_83":-7.8,"v120_95":-11.7,"v120_98":-11.4,"v90_107":-11.5,"v90_53":7.9,"v90_56":8.3,"v90_59":7.5,"v90_62":7.2,"v90_65":7.4,"v90_68":7.8,"v90_71":7.2,"v90_74":8.8,"v90_77":8.7,"v90_83":-7.8,"v90_95":-11.7,"v90_98":-11.4},"steel":{"v100_52":-5.7,"v100_49":-5.8,"v100_72":-1.1,"v100_65":4.9,"v100_41":-4.4,"v100_61":-3.9,"v100_50":-4.4,"v100_39":-6.3,"v100_74":-1.3,"v100_38":-6.9,"v100_57":4.1,"v100_47":-4.9,"v100_48":-5.3,"v100_42":-1.9,"v100_54":-5.8,"v100_64":5.8,"v100_40":-4.6,"v100_44":-4.8,"v100_56":-10.9,"v100_70":1.9,"v100_68":3.5,"v100_46":-4.3,"v100_62":-6.9,"v100_66":3.9,"v100_53":-5.5,"v100_63":4.7,"v100_43":-3.3,"v100_55":-8.8,"v100_51":-6.3,"v100_73":-1.6,"v100_59":-2.7,"v100_60":-1.8,"v100_80":-2.6,"v100_77":-2.4,"v100_89":-2.9,"v100_83":-2.7,"v100_86":-2.7},"violin":{"v100_55":-4.7,"v100_57":3.1,"v100_60":-14.4,"v100_64":4.8,"v100_67":3.9,"v100_69":14.1,"v100_72":-1.5,"v100_79":8.9,"v100_81":-5.5,"v100_93":9.1,"v100_96":-5.4},"viola":{"v100_48":1.6,"v100_52":2.0,"v100_55":2.2,"v100_59":1.2,"v100_62":-13.4,"v100_65":-1.6,"v100_69":6.7,"v100_72":1.4,"v100_76":4.6,"v100_79":1.0,"v100_83":-5.5},"cello":{"v100_38":-1.3,"v100_39":2.4,"v100_51":-1.1,"v100_52":-11.2,"v100_62":-1.8},"bass":{"v100_30":-8.8,"v100_31":-6.1,"v100_40":-6.3,"v100_42":-1.4,"v100_44":1.3,"v100_45":2.5,"v100_49":2.0,"v100_52":1.1,"v100_56":2.6,"v100_59":-1.6},"violinpizz":{"v100_55":2.2,"v100_57":-4.3,"v100_59":-7.7,"v100_62":4.2,"v100_66":-8.8,"v100_72":13.3,"v100_76":4.8,"v100_86":-14.8},"violapizz":{"v100_36":3.7,"v100_43":2.2,"v100_47":-12.6,"v100_50":-6.9,"v100_55":2.2,"v100_57":-4.3,"v100_59":-7.7,"v100_62":4.2,"v100_66":-8.8,"v100_72":13.3,"v100_76":4.8,"v100_86":-14.8},"cellopizz":{"v100_36":3.7,"v100_43":2.2,"v100_47":-12.6,"v100_50":-6.9,"v100_57":-3.1,"v100_60":3.7,"v100_67":2.9,"v100_71":3.2,"v100_77":5.1},"basspizz":{"v100_28":-1.3,"v100_31":-3.3,"v100_34":-2.0,"v100_37":-3.9,"v100_40":-3.0,"v100_46":-9.0,"v100_49":3.0,"v100_52":3.6,"v100_55":3.6,"v100_58":3.8,"v100_61":3.0,"v100_64":3.2,"v100_67":3.3},"flute":{"v100_60":-3.5,"v100_64":-2.6,"v100_76":-1.3,"v100_84":2.9,"v100_88":-2.6,"v100_93":2.2,"v100_96":1.1},"clarinet":{"v100_50":3.3,"v100_53":1.5,"v100_62":2.3,"v100_65":5.8,"v100_70":2.6,"v100_74":2.8,"v100_77":4.8,"v100_82":3.7,"v100_86":6.4},"oboe":{"v100_58":3.2,"v100_62":2.3,"v100_65":3.0,"v100_70":1.8,"v100_74":1.9,"v100_77":3.2,"v100_82":-1.3},"bassoon":{"v100_55":-1.9,"v100_72":1.1}};
+const TUNING={"tenor-uke": {"v100_60": 0.3, "v100_62": 3.8, "v100_64": -3.9, "v100_66": -1.6, "v100_67": 3.5, "v100_69": -0.8, "v100_71": -1.7, "v100_73": -2.8, "v100_75": -5.3, "v100_77": -5.0, "v100_79": -6.7, "v100_81": -8.6, "v100_84": -3.2}, "soprano-uke": {"v100_60": 0.3, "v100_62": 3.8, "v100_64": -3.9, "v100_66": -1.6, "v100_67": 3.5, "v100_69": -0.8, "v100_71": -1.7, "v100_73": -2.8, "v100_75": -5.3, "v100_77": -5.0, "v100_79": -6.7, "v100_81": -8.6, "v100_84": -3.2}, "bass-guitar": {"v100_61": -7.1, "v100_43": -3.9, "v100_25": -6.7, "v100_31": -8.8, "v100_28": -12.7, "v100_67": -3.0, "v100_52": -5.3, "v100_58": -2.8, "v100_70": 3.4, "v100_37": -8.4, "v100_40": -9.7, "v100_49": -6.7, "v100_55": -4.5, "v100_34": -6.4, "v100_46": -6.4, "v100_64": -7.2}, "picked-bass": {"v100_31": 1.0},"clavichord":{"v100_78":2.7,"v100_81":3.7,"v100_84":3.4,"v100_87":-1.3},"epiano":{"v120_28":-6.8,"v120_31":-1.5,"v120_34":-1.2,"v120_37":-3.2,"v120_40":-2.4,"v120_43":-1.5,"v120_46":-1.2,"v120_49":-1.9,"v120_52":-1.3,"v120_55":-1.5,"v120_58":-1.2,"v120_67":-1.0,"v120_73":-1.3,"v90_28":2.0,"v90_31":2.2,"v90_34":-1.2,"v90_40":-2.4,"v90_43":-1.5,"v90_46":-2.8,"v90_49":-3.2,"v90_52":-2.4,"v90_55":-1.5,"v90_58":-1.2,"v90_73":-1.3},"guitar":{"v100_52":-4.6,"v100_78":6.6,"v100_80":-2.1,"v100_81":-10.9,"v100_79":-5.6,"v100_61":-5.8,"v100_50":-4.4,"v100_38":-6.9,"v100_57":-7.4,"v100_35":-4.9,"v100_47":-1.9,"v100_42":-5.8,"v100_54":-6.8,"v100_40":-4.6,"v100_45":1.6,"v100_44":9.1,"v100_76":-4.1,"v100_68":-5.2,"v100_66":3.9,"v100_71":1.7,"v100_69":4.1,"v100_63":-4.0,"v100_73":11.4},"harpsichord":{"v100_29":-4.4,"v100_32":-4.8,"v100_35":-4.9,"v100_38":-2.0,"v100_41":3.8,"v100_44":2.2,"v100_47":1.0,"v100_53":1.8,"v100_56":4.8,"v100_59":3.9,"v100_62":3.6,"v100_65":2.8,"v100_68":3.9,"v100_71":3.2,"v100_74":3.3,"v100_77":3.3,"v100_80":3.5,"v100_83":3.7,"v100_86":4.3,"v100_89":4.3,"v100_92":4.3},"marimba":{"v120_45":1.6,"v120_48":3.0,"v120_51":4.2,"v120_54":5.9,"v120_57":5.7,"v120_60":6.5,"v120_63":6.5,"v120_66":7.3,"v120_69":7.4,"v120_72":7.5,"v120_75":7.0,"v120_78":6.8,"v120_81":6.5,"v120_84":6.5,"v120_87":6.3,"v120_90":6.1,"v120_93":6.2,"v120_96":6.5,"v90_39":-1.6,"v90_45":1.6,"v90_48":3.0,"v90_51":4.2,"v90_54":5.9,"v90_57":5.7,"v90_60":6.5,"v90_63":7.0,"v90_66":7.3,"v90_69":7.8,"v90_72":7.8,"v90_75":7.0,"v90_78":6.6,"v90_81":6.3,"v90_84":6.3,"v90_87":6.3,"v90_90":6.1,"v90_93":6.2,"v90_96":6.5},"pizzicato":{"v100_40":10.7,"v100_61":7.8,"v100_64":-10.7,"v100_70":-10.2,"v100_73":3.6,"v100_85":3.9,"v100_88":4.7,"v100_94":8.1,"v100_97":5.7},"vibraphone":{"v120_48":1.6,"v120_51":5.3,"v120_54":4.9,"v120_57":3.3,"v120_60":3.0,"v120_63":3.0,"v120_66":3.4,"v120_69":3.7,"v120_72":3.7,"v120_75":4.2,"v120_78":4.2,"v120_81":4.1,"v120_84":4.1,"v120_87":4.2,"v120_90":5.5,"v120_93":5.4,"v90_48":1.6,"v90_51":5.3,"v90_54":4.9,"v90_57":3.3,"v90_60":3.0,"v90_63":3.0,"v90_66":3.4,"v90_69":3.7,"v90_72":3.7,"v90_75":4.2,"v90_78":4.2,"v90_81":4.1,"v90_84":4.1,"v90_87":4.2,"v90_90":5.5,"v90_93":5.4},"xylophone":{"v120_107":-11.5,"v120_53":7.9,"v120_56":8.3,"v120_59":7.5,"v120_62":7.2,"v120_65":7.4,"v120_68":7.8,"v120_71":7.2,"v120_74":8.8,"v120_77":8.7,"v120_83":-7.8,"v120_95":-11.7,"v120_98":-11.4,"v90_107":-11.5,"v90_53":7.9,"v90_56":8.3,"v90_59":7.5,"v90_62":7.2,"v90_65":7.4,"v90_68":7.8,"v90_71":7.2,"v90_74":8.8,"v90_77":8.7,"v90_83":-7.8,"v90_95":-11.7,"v90_98":-11.4},"steel":{"v100_52":-5.7,"v100_49":-5.8,"v100_72":-1.1,"v100_65":4.9,"v100_41":-4.4,"v100_61":-3.9,"v100_50":-4.4,"v100_39":-6.3,"v100_74":-1.3,"v100_38":-6.9,"v100_57":4.1,"v100_47":-4.9,"v100_48":-5.3,"v100_42":-1.9,"v100_54":-5.8,"v100_64":5.8,"v100_40":-4.6,"v100_44":-4.8,"v100_56":-10.9,"v100_70":1.9,"v100_68":3.5,"v100_46":-4.3,"v100_62":-6.9,"v100_66":3.9,"v100_53":-5.5,"v100_63":4.7,"v100_43":-3.3,"v100_55":-8.8,"v100_51":-6.3,"v100_73":-1.6,"v100_59":-2.7,"v100_60":-1.8,"v100_80":-2.6,"v100_77":-2.4,"v100_89":-2.9,"v100_83":-2.7,"v100_86":-2.7},"violin":{"v100_55":-4.7,"v100_57":3.1,"v100_60":-14.4,"v100_64":4.8,"v100_67":3.9,"v100_69":14.1,"v100_72":-1.5,"v100_79":8.9,"v100_81":-5.5,"v100_93":9.1,"v100_96":-5.4},"viola":{"v100_48":1.6,"v100_52":2.0,"v100_55":2.2,"v100_59":1.2,"v100_62":-13.4,"v100_65":-1.6,"v100_69":6.7,"v100_72":1.4,"v100_76":4.6,"v100_79":1.0,"v100_83":-5.5},"cello":{"v100_38":-1.3,"v100_39":2.4,"v100_51":-1.1,"v100_52":-11.2,"v100_62":-1.8},"bass":{"v100_30":-8.8,"v100_31":-6.1,"v100_40":-6.3,"v100_42":-1.4,"v100_44":1.3,"v100_45":2.5,"v100_49":2.0,"v100_52":1.1,"v100_56":2.6,"v100_59":-1.6},"violinpizz":{"v100_55":2.2,"v100_57":-4.3,"v100_59":-7.7,"v100_62":4.2,"v100_66":-8.8,"v100_72":13.3,"v100_76":4.8,"v100_86":-14.8},"violapizz":{"v100_36":3.7,"v100_43":2.2,"v100_47":-12.6,"v100_50":-6.9,"v100_55":2.2,"v100_57":-4.3,"v100_59":-7.7,"v100_62":4.2,"v100_66":-8.8,"v100_72":13.3,"v100_76":4.8,"v100_86":-14.8},"cellopizz":{"v100_36":3.7,"v100_43":2.2,"v100_47":-12.6,"v100_50":-6.9,"v100_57":-3.1,"v100_60":3.7,"v100_67":2.9,"v100_71":3.2,"v100_77":5.1},"basspizz":{"v100_28":-1.3,"v100_31":-3.3,"v100_34":-2.0,"v100_37":-3.9,"v100_40":-3.0,"v100_46":-9.0,"v100_49":3.0,"v100_52":3.6,"v100_55":3.6,"v100_58":3.8,"v100_61":3.0,"v100_64":3.2,"v100_67":3.3},"flute":{"v100_60":-3.5,"v100_64":-2.6,"v100_76":-1.3,"v100_84":2.9,"v100_88":-2.6,"v100_93":2.2,"v100_96":1.1},"clarinet":{"v100_50":3.3,"v100_53":1.5,"v100_62":2.3,"v100_65":5.8,"v100_70":2.6,"v100_74":2.8,"v100_77":4.8,"v100_82":3.7,"v100_86":6.4},"oboe":{"v100_58":3.2,"v100_62":2.3,"v100_65":3.0,"v100_70":1.8,"v100_74":1.9,"v100_77":3.2,"v100_82":-1.3},"bassoon":{"v100_55":-1.9,"v100_72":1.1}};
 /* bowed strings: [loopStart, loopEnd, attack time] in seconds — a seamless sustain loop */
 const LOOPS={"violin":{"55":[1.0995,2.0995,0.003],"57":[2.099,3.099,0.003],"60":[1.7992,2.8006,0.003],"64":[4.8478,5.8489,0.003],"67":[1.9241,2.9241,0.003],"69":[4.7728,5.7728,0.003],"72":[0.6497,1.6492,0.003],"76":[3.0736,4.0732,0.003],"79":[0.3998,1.3998,0.003],"81":[4.1731,5.1731,0.003],"84":[3.1736,4.174,0.003],"88":[2.4489,3.4493,0.003],"91":[3.3735,4.3735,0.003],"93":[3.7983,4.7983,0.003],"96":[1.3244,2.3244,0.003]},"viola":{"48":[0.6747,1.6761,0.003],"52":[0.9496,1.9507,0.003],"55":[1.1245,2.1245,0.003],"59":[1.2744,2.2746,0.003],"62":[0.4998,1.5009,0.003],"65":[0.7996,1.799,0.003],"69":[1.2994,2.2994,0.003],"72":[0.8246,1.8241,0.003],"76":[1.1495,2.1491,0.003],"79":[0.3998,1.3998,0.003],"83":[0.9496,1.9498,0.003]},"cello":{"36":[0.4748,1.4686,0.003],"38":[1.1745,2.1688,0.003],"39":[0.6747,1.6775,0.003],"40":[0.8246,1.8197,0.003],"41":[0.8246,1.8211,0.003],"43":[1.0495,2.0495,0.003],"44":[0.4498,1.4515,0.003],"45":[1.3244,2.3244,0.003],"46":[0.3998,1.4038,0.003],"47":[0.7497,1.7459,0.003],"48":[0.3998,1.4012,0.003],"49":[0.6997,1.7026,0.003],"50":[0.6497,1.6508,0.003],"51":[0.9746,1.9774,0.003],"52":[1.0745,2.0756,0.003],"53":[0.8996,1.9018,0.003],"54":[0.6247,1.6247,0.003],"55":[0.8496,1.8496,0.003],"56":[0.8496,1.8513,0.003],"57":[0.8496,1.8496,0.003],"58":[0.5248,1.5244,0.003],"59":[0.4998,1.5,0.003],"60":[0.4748,1.4762,0.003],"61":[0.8496,1.849,0.003],"62":[0.7497,1.7508,0.003],"63":[0.7247,1.7243,0.003],"64":[0.6747,1.6758,0.003],"65":[0.7996,1.799,0.003],"66":[0.9246,1.9246,0.003],"67":[0.8496,1.8496,0.003],"68":[0.8496,1.8489,0.003],"69":[0.7247,1.7247,0.003],"70":[0.8496,1.8493,0.003],"71":[1.2744,2.2746,0.003],"72":[2.099,3.0986,0.003]},"bass":{"30":[1.4993,2.4939,0.003],"31":[4.6729,5.6729,0.003],"34":[1.5493,2.5446,0.003],"36":[3.8732,4.867,0.003],"38":[1.8492,2.8435,0.003],"40":[3.7733,4.7683,0.003],"42":[4.323,5.3176,0.003],"44":[4.0232,5.0249,0.003],"45":[4.6479,5.6479,0.003],"49":[0.4998,1.5027,0.003],"52":[4.7728,5.774,0.003],"56":[2.0491,3.0507,0.003],"59":[1.0495,2.0498,0.003]},"flute":{"60":[3.5734,4.5748,0.003],"64":[3.8732,4.8744,0.003],"69":[1.5243,2.5243,0.003],"72":[3.0736,4.0731,0.003],"76":[2.9487,3.9483,0.003],"81":[0.5747,1.5747,0.003],"84":[4.8478,5.8483,0.003],"88":[3.9982,4.9985,0.003],"93":[0.9496,1.9496,0.003],"96":[1.8991,2.8991,0.003]},"clarinet":{"50":[1.8741,2.8753,0.003],"53":[2.9986,4.0008,0.003],"58":[2.3489,3.3486,0.003],"62":[4.298,5.2992,0.003],"65":[2.8737,3.873,0.003],"70":[0.3998,1.3995,0.003],"74":[1.1995,2.1989,0.003],"77":[4.6229,5.6222,0.003],"82":[3.9232,4.9229,0.003],"86":[3.0486,4.0489,0.003],"90":[1.0495,2.0495,0.003]},"oboe":{"58":[1.1995,2.1991,0.003],"62":[0.7746,1.7758,0.003],"65":[1.5493,2.5486,0.003],"70":[1.6243,2.6239,0.003],"74":[1.3494,2.3488,0.003],"77":[1.2244,2.2238,0.003],"82":[1.3494,2.349,0.003],"86":[1.5743,2.5746,0.003],"89":[0.8496,1.8497,0.003]},"bassoon":{"34":[1.3494,2.3447,0.003],"37":[1.3994,2.3951,0.003],"41":[0.7247,1.7212,0.003],"43":[0.3998,1.3998,0.003],"45":[1.8242,2.8242,0.003],"48":[3.9482,4.9496,0.003],"55":[4.423,5.423,0.003],"57":[0.6247,1.6247,0.003],"60":[1.7742,2.7756,0.003],"64":[0.3998,1.401,0.003],"67":[2.8237,3.8237,0.003],"69":[0.9995,1.9995,0.003],"72":[2.0241,3.0236,0.003]}};
 const INSTR=[
@@ -1836,6 +1836,18 @@ const INSTR=[
   {id:"steel",name:"Steel-string guitar",short:"Steel",gm:25,desc:"Recorded acoustic guitar, every semitone · tablature",
    layers:[100],ref:{100:96},pitches:[38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 77, 80, 83, 86, 89],pedal:false,dyn:1.1,gain:.55,rel:p=>p<52?.32:.24,
    tab:true,soft:true,spread:true,oct:-12},
+  {id:"soprano-uke",name:"Soprano ukulele",short:"Soprano uke",gm:24,grp:"Guitars",desc:"Bright, short-ringing soprano · 4-string tablature",
+   layers:[100],ref:{100:96},pitches:[60,62,64,66,67,69,71,73,75,77,79,81,84],pedal:false,dyn:1.1,gain:.56,rel:()=>.16,
+   tab:true,tabKind:"uke",soft:true,spread:true},
+  {id:"tenor-uke",name:"Tenor ukulele",short:"Tenor uke",gm:24,grp:"Guitars",desc:"Recorded tenor ukulele, warm and ringing · 4-string tablature · low-G ready",
+   layers:[100],ref:{100:96},pitches:[60,62,64,66,67,69,71,73,75,77,79,81,84],pedal:false,dyn:1.1,gain:.43,rel:()=>.2,
+   tab:true,tabKind:"uke",soft:true,spread:true},
+  {id:"bass-guitar",name:"Electric bass",short:"E.bass",gm:33,grp:"Guitars",desc:"Recorded fingerstyle electric bass · 4-string tablature",
+   layers:[100],ref:{100:96},pitches:[25,28,31,34,37,40,43,46,49,52,55,58,61,64,67,70,73],pedal:false,dyn:1.1,gain:.28,rel:()=>.12,
+   tab:true,tabKind:"bass",soft:true,oct:-12},
+  {id:"picked-bass",name:"Picked bass",short:"Pick bass",gm:34,grp:"Guitars",desc:"Punchy electric bass played with a pick · 4-string tablature",
+   layers:[100],ref:{100:96},pitches:[28,31,34,37,40,43,46,49,52,55,58,61,64,67,70],pedal:false,dyn:1.1,gain:.26,rel:()=>.1,
+   tab:true,tabKind:"bass",soft:true,oct:-12},
   {id:"violin",name:"Violin",short:"Violin",gm:40,desc:"Recorded solo violin · seamless sustain · pizz.",
    layers:[100],ref:{100:96},pitches:[55, 57, 60, 64, 67, 69, 72, 76, 79, 81, 84, 88, 91, 93, 96],pedal:false,dyn:1.1,gain:0.22,rel:()=>.24,loops:LOOPS.violin,pizz:"violinpizz",soft:true,strings:true},
   {id:"viola",name:"Viola",short:"Viola",gm:41,desc:"Recorded viola section · seamless sustain · pizz.",
@@ -1883,6 +1895,7 @@ const INSTR=[
   {id:"sub-bass",name:"Sub bass",short:"Sub",gm:87,grp:"Synths",desc:"Deep, clean sine sub bass with a touch of warmth",osc:true,layers:[],pedal:true,dyn:.8,gain:.1}
 ];
 const INST_GRPS=["Keyboards","Guitars","Strings","Woodwinds","Mallets","Synths"];
+INSTR.forEach(it=>{if(it.tab&&!it.tabKind)it.tabKind="guitar";});
 INSTR.forEach(it=>{if(!it.grp)it.grp=/^(guitar|steel)$/.test(it.id)?"Guitars":/^(violin|viola|cello|bass|pizzicato)(pizz)?$/.test(it.id)?"Strings":/^(flute|oboe|clarinet|bassoon)$/.test(it.id)?"Woodwinds":/^(vibraphone|marimba|xylophone)$/.test(it.id)?"Mallets":"Keyboards";});
 INSTR.forEach(it=>{if(!it.path)it.path=(L,p)=>`sounds/${it.id}/v${L}/${p}.mp3`;if(!it.pick)it.pick=()=>it.layers[0];});
 const instOf=id=>INSTR.find(i=>i.id===id)||INSTR[0];
@@ -1893,17 +1906,17 @@ const GM_TO_INST=p=>{
   if(p<=3)return{id:"piano"};if(p===4)return{id:"epiano"};if(p===5)return{id:"fm-piano"};if(p===6)return{id:"harpsichord"};if(p===7)return{id:"clavichord"};
   if(p===9||p===13)return{id:"xylophone"};if(p===12)return{id:"marimba"};if(p<=14)return{id:"vibraphone"};if(p===15)return{id:"harpsichord"};
   if(p<=20)return{id:"organ"};if(p<=23)return{id:"square-lead"};if(p===24)return{id:"guitar"};if(p<=31)return{id:"steel"};
-  if(p<=37)return{id:"bass",pizz:true};if(p===38)return{id:"synth-bass"};if(p===39)return{id:"acid-bass"};
+  if(p===33||p===35)return{id:"bass-guitar"};if(p===34||p===36||p===37)return{id:"picked-bass"};if(p<=37)return{id:"bass",pizz:true};if(p===38)return{id:"synth-bass"};if(p===39)return{id:"acid-bass"};
   if(p===40||p===44||p===48||p===49)return{id:"violin"};if(p===41)return{id:"viola"};if(p===42)return{id:"cello"};if(p===43)return{id:"bass"};
   if(p===45)return{id:"pizzicato"};if(p===46)return{id:"guitar"};if(p===50||p===51)return{id:"string-machine"};if(p===62||p===63)return{id:"synth-brass"};
   if(p===68||p===69)return{id:"oboe"};if(p===70)return{id:"bassoon"};if(p===71)return{id:"clarinet"};if(p>=72&&p<=75)return{id:"flute"};
-  const S={80:"square-lead",81:"synth",82:"sine-lead",83:"chiptune",84:"synth-pluck",85:"sine-lead",86:"synth",87:"sub-bass",88:"crystal-pad",89:"warm-pad",
+  const S={104:"tenor-uke",105:"soprano-uke",106:"tenor-uke",107:"tenor-uke",80:"square-lead",81:"synth",82:"sine-lead",83:"chiptune",84:"synth-pluck",85:"sine-lead",86:"synth",87:"sub-bass",88:"crystal-pad",89:"warm-pad",
     90:"supersaw",91:"warm-pad",92:"crystal-pad",93:"warm-pad",94:"warm-pad",95:"sweep-pad",96:"crystal-pad",97:"sweep-pad",98:"fm-bells",99:"crystal-pad",100:"crystal-pad",101:"sweep-pad",102:"warm-pad",103:"sweep-pad",112:"fm-bells"};
   if(S[p])return{id:S[p]};
   return null;
 };
 const INST_NAMES={"piano":1,"grand-piano":1,"harpsichord":6,"clavichord":7,"electric-piano":4,"epiano":4,"e-piano":4,
-  "guitar":24,"classical-guitar":24,"nylon-guitar":24,"steel-guitar":25,"steel-string-guitar":25,"acoustic-guitar":25,
+  "guitar":24,"classical-guitar":24,"nylon-guitar":24,"steel-guitar":25,"ukulele":105,"uke":105,"soprano-ukulele":105,"soprano-uke":105,"tenor-ukulele":106,"tenor-uke":106,"bass-guitar":33,"electric-bass":33,"finger-bass":33,"picked-bass":34,"pick-bass":34,"steel-string-guitar":25,"acoustic-guitar":25,
   "pizzicato":45,"pizzicato-strings":45,"vibraphone":11,"vibes":11,"marimba":12,"xylophone":13,"synth":81,"synthesizer":81,"saw-lead":81,"square-lead":80,"sine-lead":82,"chiptune":83,"8-bit":83,"supersaw":90,"synth-pluck":84,"pluck":84,
   "synth-brass":62,"string-machine":50,"synth-strings":50,"warm-pad":89,"pad":89,"sweep-pad":95,"crystal-pad":88,"fm-piano":5,"fm-electric-piano":5,"dx-piano":5,
   "fm-bells":98,"bells":98,"organ":16,"drawbar-organ":16,"synth-bass":38,"analogue-bass":38,"analog-bass":38,"acid-bass":39,"sub-bass":87,
@@ -2257,11 +2270,12 @@ function setInstrument(id,silent){
   const it=instOf(id);
   const was=PB.playing,pos=curPos();
   if(was){silence(true);PB.playing=false;clearInterval(PB.timer);PB.pos=pos;}
-  prefs.instrument=it.id;
   const tabWas=tabOn();
+  prefs.instrument=it.id;
   freeOtherInstruments(PB.perf?[it.id,...usedInstruments(PB.perf)]:[it.id]);
   syncInstUI();updateSoundStat();markDirty();
-  if(tabWas!==tabOn()&&ui.mode==="score")renderScore(true);
+  /* the tab changes with the instrument: guitar, ukulele and bass each have their own strings */
+  if((tabWas||tabOn())&&ui.mode==="score")renderScore(true);
   if(!silent)toast(`${it.name}`,{icon:IC.music,dur:1300});
   if(was)play();
 }
@@ -2273,7 +2287,7 @@ function setTab(on,silent){
 function syncInstUI(){
   const it=curInst();
   const tb=$("btnTab");tb.hidden=!it.tab;tb.classList.toggle("on",tabOn());tb.setAttribute("aria-pressed",tabOn());
-  tb.title=`Guitar tablature ${tabOn()?"on":"off"} (⌘⇧G) — set the tuning with %%tuning`;
+  tb.title=`${TAB_KINDS[it.tabKind||"guitar"].what} tablature ${tabOn()?"on":"off"} (⌘⇧G) — set the tuning with %%tuning`;
   $("instLabel").textContent=it.short;
   $("btnInst").title=`Instrument: ${it.name} (⌘⇧O for the next one)`;
   const sel=$("setInst");if(sel)sel.value=it.id;
@@ -2308,7 +2322,7 @@ function prepAbc(src){
     out+=rep;last=m.index+m[0].length;
   }
   out+=src.slice(last);
-  out=out.replace(/^%%(?=(?:guitar-)?(?:tuning|capo)\b)/gim,"% ");
+  out=out.replace(/^%%(?=(?:guitar-|uke-|ukulele-|bass-)?(?:tuning|capo)\b)/gim,"% ");
   const toOrig=i=>{
     if(!marks.length||!Number.isFinite(i))return i;
     let d=0;
@@ -2573,6 +2587,20 @@ function staffLinesOf(gr){
   const ys=[];gr.querySelectorAll(":scope > path").forEach(pa=>{const n=nums(pa.getAttribute("d"));if(n.length>=4&&Math.abs(n[1]-n[3])<.6&&Math.abs(n[2]-n[0])>40)ys.push(n[1]);});
   return[...new Set(ys.map(y=>Math.round(y*100)/100))].sort((a,b)=>a-b);
 }
+/* a group that straddles the music staff and its tab: everything in it that lies below the split
+   moves with the tab (fret numbers included), lines that cross it are stretched */
+function moveBelow(el,mid,dy){
+  if(el.tagName==="path"){shiftPathBelow(el,mid,dy);return;}
+  const tr=()=>el.setAttribute("transform",((el.getAttribute("transform")||"")+` translate(0 ${dy})`).trim());
+  /* text and rects: their own y (bounding boxes of text are unreliable off screen) */
+  if((el.tagName==="text"||el.tagName==="rect")&&el.getAttribute("y")!=null){if(+el.getAttribute("y")>mid)tr();return;}
+  let b=null;try{b=el.getBBox();}catch(_){}
+  if(b&&(b.width||b.height)){
+    if(b.y>=mid-.5){el.setAttribute("transform",((el.getAttribute("transform")||"")+` translate(0 ${dy})`).trim());return;}
+    if(b.y+b.height<=mid)return;
+  }
+  [...el.children].forEach(k=>moveBelow(k,mid,dy));
+}
 function shiftPathBelow(el,mid,dy){
   const d=el.getAttribute("d");if(!d)return;
   /* move every y coordinate below mid; abcjs bar/system lines are absolute M/L commands */
@@ -2586,7 +2614,7 @@ function layoutSystems(root,screen){
     for(let i=0;i<kids.length;i++){
       const T=kids[i];
       if(!T.classList||!T.classList.contains("abcjs-staff"))continue;
-      const tl=staffLinesOf(T);if(tl.length!==6)continue;
+      const tl=staffLinesOf(T);if(tl.length!==6&&tl.length!==4)continue;
       /* the music staff this tab belongs to, and everything engraved for it */
       let mi=-1;for(let j=i-1;j>=0;j--){const c=kids[j];if(c.classList&&c.classList.contains("abcjs-staff")&&staffLinesOf(c).length===5){mi=j;break;}}
       if(mi<0)continue;
@@ -2601,7 +2629,7 @@ function layoutSystems(root,screen){
       for(let j=i;j<end;j++){
         const c=kids[j],b=c.getBBox();
         if(b.y>=mid-.5)c.setAttribute("transform",((c.getAttribute("transform")||"")+` translate(0 ${dy})`).trim());
-        else if(b.y+b.height>mid)(c.tagName==="path"?[c]:[...c.querySelectorAll("path")]).forEach(pa=>shiftPathBelow(pa,mid,dy));
+        else if(b.y+b.height>mid)moveBelow(c,mid,dy);
       }
       /* lines spanning the whole system (left edge, bar lines drawn before the tab) */
       for(let j=0;j<i;j++){const c=kids[j],b=c.getBBox();if(b.y<ml[4]&&b.y+b.height>tabTop-1&&j<mi+1)(c.tagName==="path"?[c]:[...c.querySelectorAll("path")]).forEach(pa=>shiftPathBelow(pa,mid,dy));}
@@ -2630,52 +2658,67 @@ const TUNING_PRESETS={"standard":"E2 A2 D3 G3 B3 E4","drop-d":"D2 A2 D3 G3 B3 E4
   "open-g":"D2 G2 D3 G3 B3 D4","open-d":"D2 A2 D3 F#3 A3 D4","open-e":"E2 B2 E3 G#3 B3 E4","open-a":"E2 A2 E3 A3 C#4 E4","open-c":"C2 G2 C3 G3 C4 E4",
   "drop-c":"C2 G2 C3 F3 A3 D4","drop-b":"B1 F#2 B2 E3 G#3 C#4","half-step-down":"Eb2 Ab2 Db3 Gb3 Bb3 Eb4","whole-step-down":"D2 G2 C3 F3 A3 D4"};
 const PC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-function parseTuningNote(tok){
+const UKE_PRESETS={"standard":"G4 C4 E4 A4","high-g":"G4 C4 E4 A4","gcea":"G4 C4 E4 A4","re-entrant":"G4 C4 E4 A4","low-g":"G3 C4 E4 A4","linear":"G3 C4 E4 A4",
+  "d-tuning":"A4 D4 F#4 B4","adf#b":"A4 D4 F#4 B4","low-a":"A3 D4 F#4 B4","baritone":"D3 G3 B3 E4","dgbe":"D3 G3 B3 E4","half-step-down":"F#4 B3 D#4 G#4","low-f#":"F#3 B3 D#4 G#4"};
+const BASS_PRESETS={"standard":"E1 A1 D2 G2","drop-d":"D1 A1 D2 G2","drop-c":"C1 G1 C2 F2","half-step-down":"Eb1 Ab1 Db2 Gb2","whole-step-down":"D1 G1 C2 F2",
+  "d-standard":"D1 G1 C2 F2","bead":"B0 E1 A1 D2","tenor":"A1 D2 G2 C3","piccolo":"E2 A2 D3 G3"};
+/* what each kind of tablature needs: string count, standard tuning (sounding MIDI), how far the
+   written music sits above the sound (guitars and basses an octave; ukuleles none) */
+const TAB_KINDS={
+  guitar:{n:6,std:STD_TUNING,shift:12,presets:TUNING_PRESETS,what:"Guitar",count:"six",eg:"%%tuning DADGAD, %%tuning D2 A2 D3 G3 A3 D4 or %%tuning drop-d"},
+  uke:{n:4,std:[67,60,64,69],shift:0,presets:UKE_PRESETS,what:"Ukulele",count:"four",eg:"%%tuning low-g, %%tuning G3 C4 E4 A4 or %%tuning ADF#B"},
+  bass:{n:4,std:[28,33,38,43],shift:12,presets:BASS_PRESETS,what:"Bass",count:"four",eg:"%%tuning drop-d, %%tuning D1 A1 D2 G2 or %%tuning BEAD"}};
+function parseTuningNote(tok,shift){if(shift==null)shift=12;
   let m=tok.match(/^([A-Ga-g])([#b♯♭]?)(-?\d)$/);
   if(m)return 12*(+m[3]+1)+PC[m[1].toUpperCase()]+(/[#♯]/.test(m[2])?1:/[b♭]/.test(m[2])?-1:0);
   m=tok.match(/^(\^{1,2}|_{1,2}|=)?([A-Ga-g])([,']*)$/);
   if(m){
     /* ABC names are written guitar pitch, an octave above the sound: E, A, D G B e is standard */
-    let v=48+PC[m[2].toUpperCase()]+(m[2]===m[2].toLowerCase()?12:0);
+    let v=60-shift+PC[m[2].toUpperCase()]+(m[2]===m[2].toLowerCase()?12:0);
     for(const c of m[3])v+=c==="'"?12:-12;
     if(m[1])v+=m[1][0]==="^"?m[1].length:m[1][0]==="_"?-m[1].length:0;
     return v;
   }
   return null;
 }
-function parseTuning(value){
+function parseTuning(value,K){
+  K=K||TAB_KINDS.guitar;
   let v=String(value).replace(/%.*$/,"").trim();
   const key=v.toLowerCase().replace(/[\s_]+/g,"-");
-  if(TUNING_PRESETS[key])v=TUNING_PRESETS[key];
+  if(K.presets[key])v=K.presets[key];
   const toks=v.split(/\s+/).filter(Boolean);
   let midi=null;
-  if(toks.length===6){midi=toks.map(parseTuningNote);if(midi.some(x=>x==null))midi=null;}
+  if(toks.length===K.n){midi=toks.map(t=>parseTuningNote(t,K.shift));if(midi.some(x=>x==null))midi=null;}
   else if(toks.length===1){
     const parts=[...v.matchAll(/([A-G])([#b♯♭]?)/g)];
-    if(parts.length===6&&parts.map(x=>x[0]).join("")===v){
+    if(parts.length===K.n&&parts.map(x=>x[0]).join("")===v){
       /* each string takes the octave closest to the same string in standard tuning */
       midi=parts.map((x,i)=>{const pc=(PC[x[1]]+(/[#♯]/.test(x[2])?1:/[b♭]/.test(x[2])?-1:0)+12)%12;
-        let best=null;for(let o=0;o<8;o++){const c=12*o+pc;if(best==null||Math.abs(c-STD_TUNING[i])<Math.abs(best-STD_TUNING[i]))best=c;}return best;});
+        let best=null;for(let o=0;o<8;o++){const c=12*o+pc;if(best==null||Math.abs(c-K.std[i])<Math.abs(best-K.std[i]))best=c;}return best;});
     }
   }
   if(!midi)return null;
-  for(let i=1;i<6;i++)if(midi[i]<=midi[i-1]-12)return null;
+  for(let i=1;i<midi.length;i++)if(midi[i]<=midi[i-1]-12)return null;
   return midi;
 }
 const NOTE_ABC=["C","^C","D","^D","E","F","^F","G","^G","A","^A","B"],NOTE_TXT=["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];
 function midiToAbc(m){const n=NOTE_ABC[m%12],o=Math.floor(m/12)-1;
   return o>=5?n.toLowerCase()+"'".repeat(o-5):n+",".repeat(Math.max(0,4-o));}
 /* the tuning and capo for each tune, plus problems to report */
-function guitarSetup(src){
+function guitarSetup(src,it){
+  /* the tuning is read for the tablature of the instrument picked with ♫; with no tab instrument
+     picked, any guitar, ukulele or bass tuning is accepted */
+  const K=it&&it.tab?TAB_KINDS[it.tabKind||"guitar"]:null;
   const lines=src.split("\n"),tunes=[],errs=[];
-  let cur={midi:STD_TUNING,capo:0,named:false},glob={midi:STD_TUNING,capo:0,named:false},inTune=false;
+  const D=K?K.std:STD_TUNING;
+  let cur={midi:D,capo:0,named:false},glob={midi:D,capo:0,named:false},inTune=false;
   lines.forEach((l,i)=>{
     if(/^X:/.test(l)){if(inTune)tunes.push(cur);inTune=true;cur={...glob};return;}
-    let m=l.match(/^%%(?:guitar-)?tuning\b\s*(.*)$/i);
-    if(m){const t=parseTuning(m[1]);
-      if(!t){errs.push({line:i,col:1,msg:"Guitar tuning needs six strings, low to high — e.g. %%tuning DADGAD, %%tuning D2 A2 D3 G3 A3 D4 or %%tuning drop-d"});return;}
+    let m=l.match(/^%%(?:guitar-|uke-|ukulele-|bass-)?tuning\b\s*(.*)$/i);
+    if(m){const t=K?parseTuning(m[1],K):Object.values(TAB_KINDS).map(k=>parseTuning(m[1],k)).find(Boolean);
+      if(!t){errs.push({line:i,col:1,msg:K?`${K.what} tuning needs ${K.count} strings, low to high — e.g. ${K.eg}`:"Tuning needs six guitar strings or four ukulele / bass strings, low to high — e.g. %%tuning drop-d or %%tuning G3 C4 E4 A4"});return;}
       const tgt=inTune?cur:glob;tgt.midi=t;tgt.named=true;if(!inTune)cur={...glob};return;}
-    m=l.match(/^%%(?:guitar-)?capo\b\s*(.*)$/i);
+    m=l.match(/^%%(?:guitar-|uke-|ukulele-|bass-)?capo\b\s*(.*)$/i);
     if(m){const c=parseInt(m[1],10);
       if(!(c>=0&&c<=12)){errs.push({line:i,col:1,msg:"Capo needs a fret number from 0 to 12 — e.g. %%capo 2"});return;}
       const tgt=inTune?cur:glob;tgt.capo=c;if(!inTune)cur={...glob};}
@@ -2684,10 +2727,12 @@ function guitarSetup(src){
   return {tunes,errs};
 }
 function tabParams(setup,ti,it){
-  const t=setup.tunes[ti]||setup.tunes[0]||{midi:STD_TUNING,capo:0};
-  const name=t.midi.map(m=>NOTE_TXT[m%12]).join(" ");
-  const label=`${it.name} · ${t.named?name:"standard tuning"}${t.capo?` · capo ${t.capo}`:""}`;
-  const one={instrument:"guitar",tuning:t.midi.map(m=>midiToAbc(m+12)),capo:t.capo||undefined,label:"",firstStaffOnly:true,linePitch:2,tabBig:false};
+  const K=TAB_KINDS[it.tabKind||"guitar"];
+  const t=setup.tunes[ti]||setup.tunes[0]||{midi:K.std,capo:0};
+  const midi=t.midi&&t.midi.length===K.n?t.midi:K.std;
+  /* abcjs reads the strings as written notes; 4 strings use its 4-line (violin-family) layout */
+  const one={instrument:K.n===4?"violin":"guitar",tuning:midi.map(m=>midiToAbc(m+K.shift)),highestNote:midiToAbc(Math.max(...midi)+K.shift+26),
+    capo:t.capo||undefined,label:"",firstStaffOnly:true,linePitch:2,tabBig:false};
   return Array.from({length:8},()=>({...one}));
 }
 const tabOn=()=>!!prefs.tab&&!!curInst().tab;
@@ -2704,7 +2749,7 @@ function fixTabs(root,knock){
         if(Math.abs(b-d)<.6&&Math.abs(c-a)>40){ys.push(b);x0=Math.min(x0,a,c);x1=Math.max(x1,a,c);}
       });
       const u=[...new Set(ys.map(y=>Math.round(y*10)/10))].sort((p,q)=>p-q);
-      if(u.length===6)sets.push({ys:u,x0,x1,gap:(u[5]-u[0])/5});
+      if(u.length===6||u.length===4)sets.push({ys:u,x0,x1,gap:(u[u.length-1]-u[0])/(u.length-1)});
     });
     if(!sets.length)return;
     svg.querySelectorAll("text.abcjs-tab-number").forEach(tx=>{
@@ -3211,7 +3256,7 @@ async function exportPDF(ids){
       const src=n.content,count=tuneCountOf(src);
       holder.innerHTML=Array.from({length:count},()=>"<div></div>").join("");
       const popt={oneSvgPerLine:true,staffwidth:Math.round(cw/px2pt)-2,paddingleft:1,paddingright:1,paddingtop:2,paddingbottom:2,foregroundColor:"#000000",add_classes:true,jazzchords:true};
-      if(tabOn()){const gs=guitarSetup(src),it=curInst();[...holder.children].forEach((div,i)=>ABCJS.renderAbc(div,prepAbc(src).text,{...popt,startingTune:i,tablature:tabParams(gs,i,it)}));fixTabs(holder,paper);}
+      if(tabOn()){const it=curInst(),gs=guitarSetup(src,it);[...holder.children].forEach((div,i)=>ABCJS.renderAbc(div,prepAbc(src).text,{...popt,startingTune:i,tablature:tabParams(gs,i,it)}));fixTabs(holder,paper);}
       else ABCJS.renderAbc([...holder.children],prepAbc(src).text,popt);
       fixArticulations(holder);fixMarcatos(holder);fixSlurs(holder);fixTexts(holder);
       layoutSystems(holder,false);
@@ -4039,7 +4084,7 @@ const INFO=[
 <li><b>Write</b> — the ABC code, with syntax highlighting in the colours of your theme, line numbers, and an insert bar of ABC symbols above the editor. Lines with a problem get a red line number.</li>
 <li><b>Score</b> — the engraved sheet music with the player on top: <b>▶ play / ❚❚ pause</b>, ■ stop, a timeline you can drag, a tempo slider, loop, and the ⤓ export menu.</li>
 </ul>
-<p>The <b>♫ instrument button</b> in the top bar switches the sound: grand piano, harpsichord, clavichord, electric piano, classical guitar, steel-string guitar, violin, viola, cello, double bass, flute, oboe, clarinet, bassoon, pizzicato strings, vibraphone, marimba, xylophone, or one of the <b>synthesizers</b>: saw lead, square lead, sine lead, chiptune, supersaw, synth pluck, synth brass, string machine, warm pad, sweep pad, crystal pad, FM electric piano, FM bells, drawbar organ, analogue bass, acid bass and sub bass. A score can also give each voice its own instrument with <code>%%instrument</code>. With either guitar chosen, a <b>TAB</b> button appears beside it to show guitar tablature under the staff.</p>
+<p>The <b>♫ instrument button</b> in the top bar switches the sound: grand piano, harpsichord, clavichord, electric piano, classical guitar, steel-string guitar, soprano ukulele, tenor ukulele, electric bass, picked bass, violin, viola, cello, double bass, flute, oboe, clarinet, bassoon, pizzicato strings, vibraphone, marimba, xylophone, or one of the <b>synthesizers</b>: saw lead, square lead, sine lead, chiptune, supersaw, synth pluck, synth brass, string machine, warm pad, sweep pad, crystal pad, FM electric piano, FM bells, drawbar organ, analogue bass, acid bass and sub bass. A score can also give each voice its own instrument with <code>%%instrument</code>. With a guitar, ukulele or bass guitar chosen, a <b>TAB</b> button appears beside it to show guitar tablature under the staff.</p>
 <p>Switch with the Write / Score buttons or ${K("⌘E")}. You can also press ${K("⌘↵")} while writing to hear the tune without leaving the code; the line being played is marked in the gutter.</p>
 <h3>Your first tune</h3>
 ${ex(["X:1","T:My first tune","M:4/4","L:1/4","K:G","G A B c | d2 B2 | c A F D | G4 |]"])}
@@ -4087,7 +4132,7 @@ ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] d2 GA Bc | d
 <h3>An instrument for each voice</h3>
 <p>Put <code>%%instrument</code> under a voice's <code>V:</code> line and that voice plays on that instrument — every voice can have its own. Voices without one use the instrument chosen with ♫ in the top bar.</p>
 ${ex(["X:1","T:String quartet","M:4/4","L:1/4","K:D","%%score (Vln1 Vln2) (Vla) (Vc)","V:Vln1","%%instrument violin","V:Vln2","%%instrument violin","V:Vla clef=alto","%%instrument viola","V:Vc clef=bass","%%instrument cello","[V:Vln1] d2 f2 | a4 |]","[V:Vln2] A2 d2 | f4 |]","[V:Vla] F2 A2 | d4 |]","[V:Vc] D,2 D,2 | D,4 |]"])}
-<p>Names you can use: <code>violin</code>, <code>viola</code>, <code>cello</code>, <code>double-bass</code>, <code>flute</code>, <code>oboe</code>, <code>clarinet</code>, <code>bassoon</code>, <code>piano</code>, <code>harpsichord</code>, <code>clavichord</code>, <code>electric-piano</code>, <code>guitar</code>, <code>steel-guitar</code>, <code>pizzicato-strings</code>, <code>vibraphone</code>, <code>marimba</code>, <code>xylophone</code>, and the synths <code>saw-lead</code> (or <code>synth</code>), <code>square-lead</code>, <code>sine-lead</code>, <code>chiptune</code>, <code>supersaw</code>, <code>synth-pluck</code>, <code>synth-brass</code>, <code>string-machine</code>, <code>warm-pad</code>, <code>sweep-pad</code>, <code>crystal-pad</code>, <code>fm-piano</code>, <code>fm-bells</code>, <code>organ</code>, <code>synth-bass</code>, <code>acid-bass</code>, <code>sub-bass</code>. Put it in the tune header, before any <code>V:</code>, to set the whole tune. An unknown name shows as a warning on its line.</p>
+<p>Names you can use: <code>violin</code>, <code>viola</code>, <code>cello</code>, <code>double-bass</code>, <code>flute</code>, <code>oboe</code>, <code>clarinet</code>, <code>bassoon</code>, <code>piano</code>, <code>harpsichord</code>, <code>clavichord</code>, <code>electric-piano</code>, <code>guitar</code>, <code>steel-guitar</code>, <code>soprano-ukulele</code> (or <code>ukulele</code>), <code>tenor-ukulele</code>, <code>bass-guitar</code> (or <code>electric-bass</code>), <code>picked-bass</code>, <code>pizzicato-strings</code>, <code>vibraphone</code>, <code>marimba</code>, <code>xylophone</code>, and the synths <code>saw-lead</code> (or <code>synth</code>), <code>square-lead</code>, <code>sine-lead</code>, <code>chiptune</code>, <code>supersaw</code>, <code>synth-pluck</code>, <code>synth-brass</code>, <code>string-machine</code>, <code>warm-pad</code>, <code>sweep-pad</code>, <code>crystal-pad</code>, <code>fm-piano</code>, <code>fm-bells</code>, <code>organ</code>, <code>synth-bass</code>, <code>acid-bass</code>, <code>sub-bass</code>. Put it in the tune header, before any <code>V:</code>, to set the whole tune. An unknown name shows as a warning on its line.</p>
 <p><code>%%instrument</code> is a codeABC shorthand that becomes the standard <code>%%MIDI program</code> (violin is program 40), so MIDI exports carry each voice's instrument. You can also write <code>%%MIDI program</code> yourself — codeABC plays it with its nearest sound; program 0 means "not set".</p>
 <h3>Pizzicato and arco</h3>
 <p>For the violin, viola, cello and double bass, write <code>!pizz!</code> before a note to start plucking and <code>!arco!</code> to go back to the bow. They are engraved as <i>pizz.</i> and <i>arco</i> above the staff, and the usual text marks <code>"^pizz."</code> and <code>"^arco"</code> work the same way. Each voice keeps its own setting until told otherwise.</p>
@@ -4112,9 +4157,9 @@ ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] !ped!c2 e2 g
 <li><code>+ped+</code> and <code>+ped-up+</code> work too. MIDI exports carry the pedal as controller 64, so DAWs and notation programs read it.</li>
 <li>Other ABC programs don't know these decorations: they will warn about them or skip them, but the rest of the tune still works.</li>
 </ul>
-<h3>Guitar tablature &amp; tunings <span class="muted">— a codeABC extension</span></h3>
-<p>Choose <b>Classical guitar</b> or <b>Steel-string guitar</b> with ♫, then tap <b>TAB</b> in the top bar (${K("⌘⇧G")}). A six-line tablature staff, as wide as the music staff and with the same space between its lines, appears under every staff, with fret numbers on the strings; tap TAB again to hide it. It is included in PDF exports while it is on.</p>
-<p>Without anything else the tab uses <b>standard tuning</b> (E A D G B E). To use another, put a <code>%%tuning</code> line at the start of the score, listing the six strings from low to high, in any of these forms:</p>
+<h3>Tablature &amp; tunings <span class="muted">— a codeABC extension</span></h3>
+<p>Choose a guitar, a ukulele or a bass guitar with ♫, then tap <b>TAB</b> in the top bar (${K("⌘⇧G")}). A tablature staff — six lines for the guitars, four for the ukuleles and basses — as wide as the music staff and with the same space between its lines, appears under every staff, with fret numbers on the strings; tap TAB again to hide it. It is included in PDF exports while it is on.</p>
+<p>Without anything else the tab uses <b>standard tuning</b> (guitar E A D G B E). To use another, put a <code>%%tuning</code> line at the start of the score, listing the strings in order (low to high on a guitar or bass; on a ukulele from the string nearest your chin: G C E A), in any of these forms — the guitar is shown here, ukuleles and basses are below:</p>
 <table>
 <tr><th>Write</th><th>Means</th></tr>
 <tr><td><code>%%tuning DADGAD</code></td><td>Six letters; each string takes the octave nearest the standard one. Use <code>#</code> or <code>b</code> for sharps and flats: <code>%%tuning DADF#AD</code></td></tr>
@@ -4131,6 +4176,29 @@ ${ex(["%%tuning DADGAD","%%capo 2","X:1","T:Celtic air","M:3/4","L:1/8","K:D","D
 <li>A tuning that can't be read shows up as a warning on its line.</li>
 <li>Other ABC programs read <code>%%tuning</code> and <code>%%capo</code> as unknown directives and skip them.</li>
 </ul>
+<h4>Ukulele</h4>
+<p><b>Soprano ukulele</b> and <b>Tenor ukulele</b> show four-line tab. Ukulele music is <b>written at the pitch it sounds</b> (treble clef, middle C is <code>C</code>). Standard tuning is the re-entrant <b>G C E A</b> with a high G (G4 C4 E4 A4) — the G string shows as the bottom line of the tab, the A string as the top, as in ukulele books.</p>
+<table>
+<tr><th>Write</th><th>Tuning</th></tr>
+<tr><td><code>%%tuning low-g</code></td><td>G3 C4 E4 A4 — low G, for arrangements that go below middle C (down to G under the staff, <code>G,</code>)</td></tr>
+<tr><td><code>%%tuning standard</code></td><td>G4 C4 E4 A4 — high (re-entrant) G, the default</td></tr>
+<tr><td><code>%%tuning ADF#B</code> or <code>d-tuning</code></td><td>A4 D4 F♯4 B4; <code>low-a</code> gives A3 D4 F♯4 B4</td></tr>
+<tr><td><code>%%tuning baritone</code></td><td>D3 G3 B3 E4</td></tr>
+<tr><td><code>%%tuning G3 C4 E4 A4</code></td><td>Any four exact pitches; or ABC names as written, e.g. <code>%%tuning G, C E A</code></td></tr>
+</table>
+${ex(["%%tuning low-g","X:1","T:Low-G arrangement","M:3/4","L:1/8","K:G","G,2 B,D G2 | (3ABc d2 B2 | [G,DGB]6 |]"])}
+<p>With four letters only (<code>%%tuning GCEA</code>), each string takes the octave of the same string in standard tuning — so that gives the high G; write <code>low-g</code> or the exact pitches for a low G.</p>
+<h4>Bass guitar</h4>
+<p><b>Electric bass</b> (fingerstyle) and <b>Picked bass</b> show four-line tab. Like all bass guitar music, parts are <b>written an octave above how they sound</b>, in the bass clef: the open strings E A D G are written <code>E,, A,, D, G,</code> and sound an octave lower in playback and exports.</p>
+<table>
+<tr><th>Write</th><th>Tuning (sounding)</th></tr>
+<tr><td><code>%%tuning standard</code></td><td>E1 A1 D2 G2, the default</td></tr>
+<tr><td><code>%%tuning drop-d</code></td><td>D1 A1 D2 G2; also <code>drop-c</code>, <code>half-step-down</code>, <code>whole-step-down</code> (or <code>d-standard</code>)</td></tr>
+<tr><td><code>%%tuning BEAD</code></td><td>B0 E1 A1 D2 — the low four strings of a five-string bass</td></tr>
+<tr><td><code>%%tuning tenor</code> / <code>piccolo</code></td><td>A1 D2 G2 C3 / E2 A2 D3 G3</td></tr>
+<tr><td><code>%%tuning D1 A1 D2 G2</code></td><td>Any four exact pitches; or ABC names as written, e.g. <code>%%tuning D,, A,, D, G,</code></td></tr>
+</table>
+<p>Fret numbers always take the lowest fret that plays a note, and the notes of a chord go on separate strings in the shape that is easiest to finger. A tuning is read for the instrument chosen with ♫, so a four-string tuning shows a warning while a guitar is chosen (and the other way round).</p>
 <h3>Spacing the score</h3>
 <p>When staves sit too close together — lyrics colliding with the next system, or two hands of a piano part crowding — add these directives near the top of the tune (after <code>X:</code>, or before it to cover every tune in the file):</p>
 <table>
@@ -4155,6 +4223,10 @@ ${ex(["[K:D] [M:3/4] [Q:1/4=90]   % inline key, meter and tempo changes","% a ne
 <tr><td><b>Electric piano</b></td><td>Tine electric piano, 2 velocity layers</td><td>yes</td></tr>
 <tr><td><b>Classical guitar</b></td><td>Real nylon-string guitar recordings, a sample about every whole tone, each note allowed to decay naturally. Like the real instrument's music, it sounds an octave below the written notes</td><td>—</td></tr>
 <tr><td><b>Steel-string guitar</b></td><td>Real acoustic guitar recordings, one for every semitone from D2 to D5 (GeneralUser GS above that); sounds an octave below the written notes</td><td>—</td></tr>
+<tr><td><b>Tenor ukulele</b></td><td>Real tenor ukulele recordings (FreePats), a sample every whole tone from C4; low-G notes below that are the C4 recording, lowered. Sounds as written</td><td>—</td></tr>
+<tr><td><b>Soprano ukulele</b></td><td>The same recordings voiced as a soprano: smaller body, brighter top and a shorter ring</td><td>—</td></tr>
+<tr><td><b>Electric bass</b></td><td>Real fingerstyle electric bass recordings, a sample every minor third from C♯1 (so five-string BEAD tuning works); sounds an octave below the written notes</td><td>—</td></tr>
+<tr><td><b>Picked bass</b></td><td>Electric bass played with a pick, from GeneralUser GS; sounds an octave below the written notes</td><td>—</td></tr>
 <tr><td><b>Violin</b></td><td>Real solo violin recordings (every minor third), held notes sustain with a seamless loop in the steady part of the bow stroke; <code>!pizz!</code> plays real violin pizzicato</td><td>—</td></tr>
 <tr><td><b>Viola</b></td><td>Real viola section recordings (VSCO-2), sustained the same way, with pizzicato</td><td>—</td></tr>
 <tr><td><b>Cello</b></td><td>Real solo cello recordings for every semitone from C2 to C5, sustained, with real cello pizzicato</td><td>—</td></tr>
@@ -4209,7 +4281,7 @@ ${row(K("⌘⇧L"),"Loop on / off",1)}
 ${row(K("⌘⇧↑")+K("⌘⇧↓"),"Tempo faster / slower",1)}
 ${row(K("⌘⇧0"),"Tempo back to 100%",1)}
 ${row(K("⌘⇧O"),"Next instrument",1)}
-${row(K("⌘⇧G"),"Guitar tablature on / off",1)}
+${row(K("⌘⇧G"),"Tablature on / off (guitars, ukuleles, basses)",1)}
 ${row(K("⌘⇧A"),"Export .abc",1)}
 ${row(K("⌘⇧M"),"Export .midi",1)}
 ${row(K("⌘⇧U"),"Export audio (.wav)",1)}
@@ -4237,6 +4309,7 @@ ${row(K("[")+K("{")+K('"'),"Close themselves; type the closer to step over it",1
 <li>Engraving, MIDI and transposition: <b>abcjs</b> by Paul Rosen and Gregory Dyke — MIT licence.</li>
 <li>Piano: <b>Salamander Grand Piano V3</b> by Alexander Holm — CC BY 3.0 (MP3 conversions by Jan Forst, MIT).</li>
 <li>Violin, cello, double bass, flute, clarinet and bassoon: solo recordings from <b>tonejs-instruments</b> (MIT). Oboe, the bassoon's lowest notes, viola section and violin/cello pizzicato: <b>VSCO-2 Community Edition</b> by Sam Gossner (CC0), via tiny-orchestra.</li>
+<li>Ukuleles: tenor ukulele recorded by Mateusz Dąbrowski for <b>FreePats</b> (CC0). Electric bass: <b>tonejs-instruments</b> (MIT); picked bass: <b>GeneralUser GS</b>.</li>
 <li>Guitars: recordings from <b>tonejs-instruments</b> (MIT); the double bass pizzicato, the steel guitar's top notes and the harpsichord, electric piano, pizzicato strings, vibraphone, marimba and xylophone: <b>GeneralUser GS</b> by S. Christian Collins, rendered to samples with spessasynth.</li>
 <li>Clavichord: a physical model written for codeABC. Synthesizers and organ: generated live with Web Audio by codeABC's own synth engine.</li>
 <li>PDF: <b>jsPDF</b> and <b>svg2pdf.js</b> — MIT licence.</li>

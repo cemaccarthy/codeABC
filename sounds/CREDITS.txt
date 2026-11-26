@@ -18,3 +18,13 @@ Double bass pizzicato: GeneralUser GS "Acoustic Bass" (a plucked upright bass), 
 Flute, clarinet, bassoon: solo recordings from tonejs-instruments (MIT), WAV originals, looped and encoded as
   the bowed strings are. Oboe and the bassoon's lowest notes (B-flat1, C-sharp2, F2): VSCO-2 Community Edition (CC0),
   via tiny-orchestra, looped the same way.
+
+Ukuleles (sounds/tenor-uke, sounds/soprano-uke)
+  Tenor ukulele recorded by Mateusz Dąbrowski, FreePats project (freepats.zenvoid.org),
+  released under CC0 1.0. The soprano set is the same recordings re-voiced (EQ and decay).
+
+Electric bass (sounds/bass-guitar)
+  tonejs-instruments "bass-electric" samples, MIT licence.
+
+Picked bass (sounds/picked-bass)
+  Rendered from GeneralUser GS (program 34, Picked Bass) by S. Christian Collins; see its licence above.
