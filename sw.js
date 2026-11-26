@@ -49,7 +49,7 @@ self.addEventListener("fetch", e => {
   if (url.origin === location.origin) {
     if (req.mode === "navigate" || url.pathname.endsWith("/index.html") || url.pathname.endsWith("/")) {
       e.respondWith(networkFirst(req));
-    } else if (url.pathname.includes("/piano/")) {
+    } else if (url.pathname.includes("/piano/") || url.pathname.includes("/sounds/")) {
       e.respondWith(cacheFirst(req, PIANO));
     } else {
       e.respondWith(staleWhileRevalidate(req, SHELL));

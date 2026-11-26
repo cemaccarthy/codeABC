@@ -673,6 +673,16 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;b
 .libsel{appearance:none;-webkit-appearance:none;background:var(--panel);border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--text);padding:4px 20px 4px 8px;}
 #popMove{width:260px;}
 #popNote,#popFolder,#popExport{width:270px;}
+#popInst{width:290px;}
+.ib.inst{width:auto;padding:0 10px 0 8px;gap:6px;font-size:11px;font-weight:700;color:var(--accent);border-color:var(--border);background:var(--raised);}
+.ib.inst:hover{border-color:var(--accent);}
+.ib.inst svg{width:16px;height:16px;}
+.inst-row{align-items:flex-start;}
+.inst-row .mtxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+.inst-row .mdesc{font-size:10px;color:var(--muted);white-space:normal;line-height:1.4;}
+.inst-row.here{background:var(--sel);}
+.tk-ped{color:var(--syn-fn);font-weight:700;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;}
+.fb-ped{color:var(--syn-fn);font-weight:700;}
 
 /* ---------- dialog ---------- */
 #dlgWrap,#infoWrap{position:fixed;inset:0;z-index:220;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:fadeIn .15s;}
@@ -748,6 +758,8 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;b
 @media (max-width:639.98px){
   #btnPdf{display:none !important;}
   .seg button span:not(.sgi){display:none;}
+  #instLabel{display:none;}
+  .ib.inst{padding:0;width:33px;}
   #transport{flex-wrap:wrap;row-gap:4px;}
   .tp-tempo{order:9;flex:1 1 100%;padding-left:50px;}
   .tp-tempo input{flex:1;width:auto;}
@@ -830,6 +842,7 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;b
         <button data-mode="write" data-sfx class="active" role="tab" aria-label="Write ABC code"><span class="sgi"></span><span>Write</span></button>
         <button data-mode="score" data-sfx role="tab" aria-label="Rendered score and playback"><span class="sgi"></span><span>Score</span></button>
       </div>
+      <button id="btnInst" class="ib inst" type="button" aria-label="Choose instrument"><span id="instIco"></span><span id="instLabel">Piano</span></button>
       <button id="btnInfo" class="ib" aria-label="How to use codeABC" title="How to use codeABC (⌘I)"></button>
       <button id="btnPdf" class="ib" aria-label="Export sheet music as PDF" title="Export sheet music as PDF (⌘⇧P)"></button>
       <button id="btnSettings" class="ib" aria-label="Settings" title="Settings"></button>
@@ -877,6 +890,8 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;b
       <button class="fb fb-tag" data-cmd="stacc" title="Staccato">.</button>
       <button class="fb fb-tag" data-cmd="d:fermata" title="Fermata">!fermata!</button>
       <button class="fb fb-tag" data-cmd="d:trill" title="Trill">!trill!</button>
+      <button class="fb fb-ped" data-cmd="d:ped" title="Sustain pedal down (codeABC extension)">!ped!</button>
+      <button class="fb fb-ped" data-cmd="d:ped-up" title="Sustain pedal up (codeABC extension)">!ped-up!</button>
       <span class="fb-sep"></span>
       <button class="fb fb-ly" data-cmd="lyr" title="Lyrics line under the music (w:)">w:</button>
       <button class="fb fb-fn" data-cmd="voice" title="New voice (V:)">V:</button>
@@ -978,13 +993,14 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;b
     <div class="set-row"><span class="slab">Page margins</span><input type="range" id="setMargin" min="0" max="25" step="1" value="6"><span class="sval" id="setMarginVal">6%</span></div>
     <div class="set-row"><span class="slab">Colours</span><span class="selwrap"><select id="setColors" class="libsel"><option value="theme">Match theme</option><option value="paper">Paper sheet</option></select></span></div>
     <div class="set-row"><span class="slab">Follow playback</span><label class="switch"><input type="checkbox" id="setAutoScroll" checked><i></i></label></div>
-    <div class="pop-title">PIANO</div>
+    <div class="pop-title">SOUND</div>
+    <div class="set-row"><span class="slab">Instrument</span><span class="selwrap"><select id="setInst" class="libsel"></select></span></div>
     <div class="set-row"><span class="slab">Volume</span><input type="range" id="setVol" min="0" max="100" step="1" value="80"><span class="sval" id="setVolVal">80%</span></div>
     <div class="set-row"><span class="slab">Concert hall reverb</span><input type="range" id="setRev" min="0" max="100" step="1" value="28"><span class="sval" id="setRevVal">28%</span></div>
     <div class="set-row"><span class="slab">Play chord symbols</span><label class="switch"><input type="checkbox" id="setChords" checked><i></i></label></div>
     <div class="set-row"><span class="slab">Count-in click</span><label class="switch"><input type="checkbox" id="setCount"><i></i></label></div>
-    <button class="menu-row" id="setOffline" type="button"><span id="setOfflineIco"></span><span class="mlab">Keep piano for offline use</span></button>
-    <div class="pop-foot" id="pianoStat">Salamander Grand Piano — three velocity layers, stereo, 44.1 kHz. Samples download the first time you press play.</div>
+    <button class="menu-row" id="setOffline" type="button"><span id="setOfflineIco"></span><span class="mlab">Keep all instruments for offline use</span></button>
+    <div class="pop-foot" id="pianoStat"></div>
   </div>
   <div id="setPdf" hidden>
     <div class="pop-title">PAGE</div>
@@ -1015,6 +1031,7 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;b
 <div id="popFolder" class="pop" hidden></div>
 <div id="popMove" class="pop" hidden></div>
 <div id="popExport" class="pop" hidden></div>
+<div id="popInst" class="pop" hidden></div>
 
 <div id="dlgWrap" hidden>
   <div class="dlg" role="dialog" aria-modal="true">
@@ -1194,7 +1211,7 @@ function ensureWebFonts(){
 const KEY="codeabc.v1";
 const DEF_PREFS={theme:"midnight",mode:"write",fontSize:15,lineNumbers:true,autoPair:true,followLine:true,crt:true,sound:true,type:false,sort:"edited",filter:"folder",font:"sf",lastFolder:null,
   scoreScale:100,readMargin:6,scoreColors:"theme",autoScroll:true,
-  volume:80,reverb:28,chords:true,countIn:false,tempo:100,loop:false,
+  instrument:"piano",volume:80,reverb:28,chords:true,countIn:false,tempo:100,loop:false,
   pdfSize:"letter",pdfMargin:"normal",pdfPaper:"white",pdfScale:100,pdfGap:8,pdfNewPage:false,pdfFooter:true,pdfNums:true};
 let notes=[],folders=[],activeId=null,prefs={...DEF_PREFS},storageOK=true;
 const ui={query:"",folderId:null,selectMode:false,selection:new Set(),sbOpen:window.innerWidth>=900,mode:"write",setTab:"appearance",infoTab:"start"};
@@ -1486,7 +1503,7 @@ function hlMusic(s){
     const c=s[i],r=s.slice(i);let m;
     if(c==="%"){out+=sp("tk-c",r);break;}
     if(c==='"'){const j=s.indexOf('"',i+1),t=j<0?r:s.slice(i,j+1);out+=sp(/^"[\^_<>@]/.test(t)?"tk-ann":"tk-ch",t);i+=t.length;continue;}
-    if((c==="!"||c==="+")&&(m=r.match(c==="!"?/^![^!\s|]{1,30}!/:/^\+[^+\s|]{1,30}\+/))){out+=sp("tk-dec",m[0]);i+=m[0].length;continue;}
+    if((c==="!"||c==="+")&&(m=r.match(c==="!"?/^![^!\s|]{1,30}!/:/^\+[^+\s|]{1,30}\+/))){out+=sp(/^.ped(-up)?.$/.test(m[0])?"tk-ped":"tk-dec",m[0]);i+=m[0].length;continue;}
     if(c==="["&&(m=r.match(/^\[([A-Za-z]):([^\]]*)(\]?)/))){out+=sp("tk-p","[")+sp("tk-ifield",m[1])+sp("tk-p",":")+hlFieldValue(m[1],m[2])+(m[3]?sp("tk-p","]"):"");i+=m[0].length;continue;}
     if(m=r.match(/^(?:\[\||:*\|\]|:*\|\||:*\|(?:[:]+)?|::+|\[(?=\d))(?:\s?\d+(?:[,\-]\d+)*)?/)){out+=sp("tk-bar",m[0]);i+=m[0].length;continue;}
     if(c==="["||c==="]"){out+=sp("tk-br",c);i++;continue;}
@@ -1681,15 +1698,20 @@ const tuneCountOf=src=>Math.max(1,(src.match(/^X:/gm)||[]).length);
 /* a silent parse of every tune in the text (one "*" target per tune) */
 const parseAll=src=>ABCJS.renderAbc(Array(tuneCountOf(src)).fill("*"),src,{});
 /* abcjs reports "Music Line:4:16: message:  context" with lines counted from each tune's X: */
-function warningsOf(vis,src){
+function warningsOf(vis,src,prep){
   const out=[],xs=[];
+  /* columns come from the prepared text: map them back onto your own line */
+  const pl=[0],ol=[0];
+  if(prep&&prep.marks.length){for(let i=0;i<prep.text.length;i++)if(prep.text.charCodeAt(i)===10)pl.push(i+1);for(let i=0;i<src.length;i++)if(src.charCodeAt(i)===10)ol.push(i+1);}
+  const colMap=(line,col)=>prep&&prep.marks.length&&pl[line]!=null&&ol[line]!=null?prep.toOrig(pl[line]+col-1)-ol[line]+1:col;
   String(src||"").split("\n").forEach((l,i)=>{if(/^X:/.test(l))xs.push(i);});
   vis.forEach((v,ti)=>(v&&v.warnings||[]).forEach(w=>{
     const txt=String(w).replace(/<[^>]+>/g,"").replace(/[ \t]+/g," ").trim();
     const m=String(w).replace(/<[^>]+>/g,"").match(/^(?:Music )?[Ll]ine:?\s*(\d+):(\d+):?\s*([\s\S]*)$/);
     if(!m){out.push({tune:ti,line:-1,col:0,msg:txt});return;}
     const msg=m[3].split(/:\s{2,}/)[0].trim()||txt;
-    out.push({tune:ti,line:(xs[ti]!=null?xs[ti]:0)+(+m[1])-1,col:+m[2],msg});
+    const line=(xs[ti]!=null?xs[ti]:0)+(+m[1])-1;
+    out.push({tune:ti,line,col:colMap(line,+m[2]),msg});
   }));
   return out;
 }
@@ -1714,11 +1736,12 @@ function renderScore(force){
   const count=tuneCountOf(src);
   scoreEl.innerHTML=Array.from({length:count},(_,i)=>`<div class="tune" data-t="${i}"></div>`).join("");
   const st=scoreScroll.scrollTop;
-  try{scoreVis=ABCJS.renderAbc([...scoreEl.children],src,scoreOptions(w));}
+  const prep=prepAbc(src);
+  try{scoreVis=ABCJS.renderAbc([...scoreEl.children],prep.text,scoreOptions(w));}
   catch(e){console.error(e);scoreVis=[];scoreEl.innerHTML=`<p class="sc-empty">This ABC couldn’t be engraved: ${esc(e.message||e)}</p>`;}
   scoreEl.querySelectorAll(".tune").forEach((d,i)=>{if(!d.querySelector("svg"))d.remove();});
   scoreScroll.scrollTop=st;
-  showWarnings(warningsOf(scoreVis,src));
+  showWarnings(warningsOf(scoreVis,src,prep));
   syncTuneSelect();
   if(PB.perf&&scoreVis[PB.tune])PB.perf.vo=scoreVis[PB.tune];
   buildHighlightEvents();
@@ -1737,14 +1760,16 @@ function showWarnings(ws){
 /* validate in the background while writing, so warnings show up in the gutter */
 const lintSoon=debounce(()=>{
   const n=activeNote();if(!n||!hasABC()||ui.mode!=="write")return;
-  try{const vis=parseAll(n.content);computeLineStarts(n.content);
-    const ws=warningsOf(vis,n.content);showWarnings(ws);
+  try{const prep=prepAbc(n.content),vis=parseAll(prep.text);computeLineStarts(n.content);
+    const ws=warningsOf(vis,n.content,prep);showWarnings(ws);
     linesEl.querySelectorAll(".ln").forEach((el,i)=>el.classList.toggle("err",errLines.has(i)));
   }catch(e){}
 },700);
 function onScoreClick(abcelem,tuneNumber,classes){
   if(!abcelem)return;
   const n=activeNote();if(!n)return;
+  const map=prepAbc(n.content).toOrig;
+  abcelem={startChar:map(abcelem.startChar),endChar:map(abcelem.endChar),midiPitches:abcelem.midiPitches};
   if(Number.isFinite(abcelem.startChar)&&abcelem.startChar>=0){
     try{ta.setSelectionRange(abcelem.startChar,abcelem.endChar>abcelem.startChar?abcelem.endChar:abcelem.startChar);}catch(_){}
   }
@@ -1755,22 +1780,54 @@ function onScoreClick(abcelem,tuneNumber,classes){
   if(!PB.playing&&pitches.length)auditionNotes(pitches);
 }
 
-/* ============================== PIANO (Salamander Grand, sampled) ==============================
-   30 samples per velocity layer, one every minor third from A0 to C8, each played at most a
-   semitone away from its own pitch. Three velocity layers (soft / medium / loud) are picked
-   per note from the tune's dynamics; only the layers a tune needs are downloaded and decoded. */
-const SAMPLE_P=[];for(let p=21;p<=108;p+=3)SAMPLE_P.push(p);
-const LAYERS=[5,10,14],LAYER_REF={5:46,10:86,14:118},LAYER_NAME={5:"soft",10:"medium",14:"loud"};
-const PIANO={buf:{},loading:{},failed:false};
-const layerFor=v=>v<=60?5:v<=108?10:14;
+/* ============================== INSTRUMENTS ==============================
+   Every sampled instrument is a set of real recordings, one every minor third, so no note is
+   played more than a semitone and a half from its own recording; each sample also carries a
+   measured tuning correction. Only the instrument in use is downloaded and kept in memory.
+   · Grand piano: Salamander Grand Piano V3 (Yamaha C5), 3 velocity layers.
+   · Harpsichord, electric piano, guitar, pizzicato strings, vibraphone, marimba, xylophone:
+     rendered note by note from GeneralUser GS (uncompressed, 44.1 kHz stereo), 1–2 velocity layers.
+   · Clavichord: a physical model of two tangent-struck strings and a soundboard, rendered to samples.
+   · Synthesizer: generated live (two detuned saws and a sub square through a resonant filter). */
+const P3=(a,b)=>{const r=[];for(let p=a;p<=b;p+=3)r.push(p);return r;};
+const TUNING={"clavichord":{"v100_78":2.7,"v100_81":3.7,"v100_84":3.4,"v100_87":-1.3},"epiano":{"v120_28":-6.8,"v120_31":-1.5,"v120_34":-1.2,"v120_37":-3.2,"v120_40":-2.4,"v120_43":-1.5,"v120_46":-1.2,"v120_49":-1.9,"v120_52":-1.3,"v120_55":-1.5,"v120_58":-1.2,"v120_67":-1.0,"v120_73":-1.3,"v90_28":2.0,"v90_31":2.2,"v90_34":-1.2,"v90_40":-2.4,"v90_43":-1.5,"v90_46":-2.8,"v90_49":-3.2,"v90_52":-2.4,"v90_55":-1.5,"v90_58":-1.2,"v90_73":-1.3},"guitar":{"v120_40":-6.8,"v120_43":-7.0,"v120_46":1.9,"v120_49":2.0,"v120_55":-3.3,"v120_58":5.0,"v120_61":4.6,"v120_64":9.6,"v120_67":3.1,"v120_70":5.3,"v120_73":4.9,"v120_76":4.4,"v120_79":4.3,"v120_82":4.0,"v120_85":3.9,"v120_88":4.0,"v90_40":-6.8,"v90_43":-7.0,"v90_46":1.9,"v90_49":2.0,"v90_55":-3.3,"v90_58":5.0,"v90_61":4.6,"v90_64":9.6,"v90_67":3.1,"v90_70":5.3,"v90_73":4.9,"v90_76":4.4,"v90_79":4.3,"v90_82":4.0,"v90_85":3.9,"v90_88":4.0},"harpsichord":{"v100_29":-4.4,"v100_32":-4.8,"v100_35":-4.9,"v100_38":-2.0,"v100_41":3.8,"v100_44":2.2,"v100_47":1.0,"v100_53":1.8,"v100_56":4.8,"v100_59":3.9,"v100_62":3.6,"v100_65":2.8,"v100_68":3.9,"v100_71":3.2,"v100_74":3.3,"v100_77":3.3,"v100_80":3.5,"v100_83":3.7,"v100_86":4.3,"v100_89":4.3,"v100_92":4.3},"marimba":{"v120_45":1.6,"v120_48":3.0,"v120_51":4.2,"v120_54":5.9,"v120_57":5.7,"v120_60":6.5,"v120_63":6.5,"v120_66":7.3,"v120_69":7.4,"v120_72":7.5,"v120_75":7.0,"v120_78":6.8,"v120_81":6.5,"v120_84":6.5,"v120_87":6.3,"v120_90":6.1,"v120_93":6.2,"v120_96":6.5,"v90_39":-1.6,"v90_45":1.6,"v90_48":3.0,"v90_51":4.2,"v90_54":5.9,"v90_57":5.7,"v90_60":6.5,"v90_63":7.0,"v90_66":7.3,"v90_69":7.8,"v90_72":7.8,"v90_75":7.0,"v90_78":6.6,"v90_81":6.3,"v90_84":6.3,"v90_87":6.3,"v90_90":6.1,"v90_93":6.2,"v90_96":6.5},"pizzicato":{"v100_40":10.7,"v100_61":7.8,"v100_64":-10.7,"v100_70":-10.2,"v100_73":3.6,"v100_85":3.9,"v100_88":4.7,"v100_94":8.1,"v100_97":5.7},"vibraphone":{"v120_48":1.6,"v120_51":5.3,"v120_54":4.9,"v120_57":3.3,"v120_60":3.0,"v120_63":3.0,"v120_66":3.4,"v120_69":3.7,"v120_72":3.7,"v120_75":4.2,"v120_78":4.2,"v120_81":4.1,"v120_84":4.1,"v120_87":4.2,"v120_90":5.5,"v120_93":5.4,"v90_48":1.6,"v90_51":5.3,"v90_54":4.9,"v90_57":3.3,"v90_60":3.0,"v90_63":3.0,"v90_66":3.4,"v90_69":3.7,"v90_72":3.7,"v90_75":4.2,"v90_78":4.2,"v90_81":4.1,"v90_84":4.1,"v90_87":4.2,"v90_90":5.5,"v90_93":5.4},"xylophone":{"v120_107":-11.5,"v120_53":7.9,"v120_56":8.3,"v120_59":7.5,"v120_62":7.2,"v120_65":7.4,"v120_68":7.8,"v120_71":7.2,"v120_74":8.8,"v120_77":8.7,"v120_83":-7.8,"v120_95":-11.7,"v120_98":-11.4,"v90_107":-11.5,"v90_53":7.9,"v90_56":8.3,"v90_59":7.5,"v90_62":7.2,"v90_65":7.4,"v90_68":7.8,"v90_71":7.2,"v90_74":8.8,"v90_77":8.7,"v90_83":-7.8,"v90_95":-11.7,"v90_98":-11.4}};
+const INSTR=[
+  {id:"piano",name:"Grand piano",short:"Piano",gm:0,desc:"Salamander Grand · Yamaha C5 · 3 velocity layers",
+   path:(L,p)=>`piano/v${L}/${p}.mp3`,layers:[5,10,14],ref:{5:46,10:86,14:118},pick:v=>v<=60?5:v<=108?10:14,
+   pitches:P3(21,108),pedal:true,dyn:1.3,gain:.42,rel:p=>p<45?.55:p<62?.42:p<78?.3:.22},
+  {id:"harpsichord",name:"Harpsichord",short:"Harpsi",gm:6,desc:"Plucked quills · damped on release",
+   layers:[100],ref:{100:100},pitches:P3(29,92),pedal:false,dyn:.25,gain:0.21,rel:()=>.1},
+  {id:"clavichord",name:"Clavichord",short:"Clavi",gm:7,desc:"Modelled tangent-struck strings · soft & intimate",
+   layers:[100],ref:{100:96},pitches:P3(36,87),pedal:false,dyn:1.1,gain:0.18,rel:()=>.09},
+  {id:"epiano",name:"Electric piano",short:"E.piano",gm:4,desc:"Tine electric piano · 2 velocity layers",
+   layers:[90,120],ref:{90:88,120:118},pick:v=>v<=108?90:120,pitches:P3(28,100),pedal:true,dyn:1.2,gain:0.075,rel:p=>p<60?.4:.3},
+  {id:"guitar",name:"Classical guitar",short:"Guitar",gm:24,desc:"Nylon strings · 2 velocity layers",
+   layers:[90,120],ref:{90:88,120:118},pick:v=>v<=108?90:120,pitches:P3(40,88),pedal:false,dyn:1.1,gain:0.21,rel:()=>.22},
+  {id:"pizzicato",name:"Pizzicato strings",short:"Pizz.",gm:45,desc:"Plucked string section · rings out",
+   layers:[100],ref:{100:96},pitches:P3(28,97),pedal:false,ring:true,dyn:1.1,gain:0.3,rel:()=>.15},
+  {id:"vibraphone",name:"Vibraphone",short:"Vibes",gm:11,desc:"Metal bars · damper pedal · 2 velocity layers",
+   layers:[90,120],ref:{90:88,120:118},pick:v=>v<=108?90:120,pitches:P3(48,93),pedal:true,dyn:1.1,gain:0.085,rel:()=>.28},
+  {id:"marimba",name:"Marimba",short:"Marimba",gm:12,desc:"Rosewood bars · rings out · 2 velocity layers",
+   layers:[90,120],ref:{90:88,120:118},pick:v=>v<=108?90:120,pitches:P3(36,96),pedal:false,ring:true,dyn:1.1,gain:0.15,rel:()=>.12},
+  {id:"xylophone",name:"Xylophone",short:"Xylo",gm:13,desc:"Hard mallets · rings out · 2 velocity layers",
+   layers:[90,120],ref:{90:88,120:118},pick:v=>v<=108?90:120,pitches:P3(53,107),pedal:false,ring:true,dyn:1.1,gain:0.26,rel:()=>.1},
+  {id:"synth",name:"Synthesizer",short:"Synth",gm:81,desc:"Analogue-style saw synth, generated live",
+   osc:true,layers:[],pedal:true,dyn:1,gain:0.1}
+];
+INSTR.forEach(it=>{if(!it.path)it.path=(L,p)=>`sounds/${it.id}/v${L}/${p}.mp3`;if(!it.pick)it.pick=()=>it.layers[0];});
+const instOf=id=>INSTR.find(i=>i.id===id)||INSTR[0];
+const curInst=()=>instOf(prefs.instrument);
+const SND={buf:{},loading:{}};
+const sndKey=(it,L)=>it.id+":"+L;
 function decodeAudio(ctx,ab){
   return new Promise((res,rej)=>{let done=false;const ok=b=>{if(!done){done=true;res(b);}},bad=e=>{if(!done){done=true;rej(e||new Error("decode"));}};
     try{const p=ctx.decodeAudioData(ab,ok,bad);if(p&&p.then)p.then(ok,bad);}catch(e){bad(e);}});
 }
-let pianoProgress=null;
-function loadLayer(L){
-  if(PIANO.buf[L])return Promise.resolve(PIANO.buf[L]);
-  if(PIANO.loading[L])return PIANO.loading[L];
+let sndProgress=null;
+function loadLayer(it,L){
+  const key=sndKey(it,L);
+  if(SND.buf[key])return Promise.resolve(SND.buf[key]);
+  if(SND.loading[key])return SND.loading[key];
   ensureAudio();
   if(!AC)return Promise.reject(new Error("Web Audio is not available"));
   let done=0;
@@ -1780,30 +1837,33 @@ function loadLayer(L){
       let err;
       for(let k=0;k<3;k++){
         try{
-          const r=await fetch(`piano/v${L}/${sp}.mp3`);
+          const r=await fetch(it.path(L,sp));
           if(!r.ok)throw new Error("HTTP "+r.status);
           map.set(sp,await decodeAudio(AC,await r.arrayBuffer()));
-          done++;if(pianoProgress)pianoProgress(L,done/SAMPLE_P.length);
+          done++;if(sndProgress)sndProgress(key,done/it.pitches.length);
           return;
         }catch(e){err=e;await new Promise(r=>setTimeout(r,300*(k+1)));}
       }
       throw err;
     };
     /* a few at a time keeps iPad memory and the network calm */
-    const q=SAMPLE_P.slice();
+    const q=it.pitches.slice();
     await Promise.all(Array.from({length:6},async()=>{while(q.length)await one(q.shift());}));
-    PIANO.buf[L]=map;delete PIANO.loading[L];updatePianoStat();
+    SND.buf[key]=map;delete SND.loading[key];updateSoundStat();
     return map;
   })();
-  PIANO.loading[L]=p;
-  p.catch(()=>{delete PIANO.loading[L];});
+  SND.loading[key]=p;
+  p.catch(()=>{delete SND.loading[key];});
   return p;
 }
-function layerToUse(v){
-  const want=layerFor(v);
-  if(PIANO.buf[want])return want;
-  if(PIANO.buf[10])return 10;
-  return LAYERS.find(l=>PIANO.buf[l]);
+/* only the instrument in use stays decoded — iPad memory is precious */
+function freeOtherInstruments(keep){
+  Object.keys(SND.buf).forEach(k=>{if(!k.startsWith(keep+":"))delete SND.buf[k];});
+}
+function layerToUse(it,v){
+  const want=it.pick(v);
+  if(SND.buf[sndKey(it,want)])return want;
+  return it.layers.find(l=>SND.buf[sndKey(it,l)]);
 }
 const IR_CACHE=new Map();
 function makeIR(ctx){
@@ -1849,21 +1909,49 @@ function setChainLevels(c){
   const v=clamp(+prefs.volume,0,100)/100;
   c.out.gain.value=1.6*v*v;
 }
-function voice(ctx,dest,n,when,warp){
-  const L=layerToUse(n.v);if(L===undefined)return null;
-  const p=clamp(Math.round(n.p),0,127),s=SAMPLE_P[clamp(Math.round((p-21)/3),0,SAMPLE_P.length-1)];
-  const buf=PIANO.buf[L].get(s);if(!buf)return null;
+/* the end of a note: its own length, or held on by the sustain pedal on instruments that have one */
+const noteEnd=(it,n)=>it.pedal&&n.pe>n.e?n.pe:n.e;
+function voice(ctx,dest,n,when,warp,it){
+  it=it||curInst();
+  const p=clamp(Math.round(n.p),0,127);
+  const amp0=it.gain*clamp(Math.pow(Math.max(1,n.v)/(it.osc?90:it.ref[layerToUse(it,n.v)]||90),it.dyn),.25,1.55);
+  const dur=Math.max(.04,(noteEnd(it,n)-n.s)/warp);
+  if(it.osc)return synthVoice(ctx,dest,n,when,when+dur,amp0);
+  const L=layerToUse(it,n.v);if(L===undefined)return null;
+  const ps=it.pitches,s=ps.reduce((a,b)=>Math.abs(b-p)<Math.abs(a-p)?b:a,ps[0]);
+  const buf=SND.buf[sndKey(it,L)].get(s);if(!buf)return null;
+  const cents=(n.c||0)-((TUNING[it.id]||{})["v"+L+"_"+s]||0);
   const src=ctx.createBufferSource(),g=ctx.createGain();
-  src.buffer=buf;src.playbackRate.value=Math.pow(2,(p-s+(n.c||0)/100)/12);
-  const amp=.42*clamp(Math.pow(Math.max(1,n.v)/LAYER_REF[L],1.3),.28,1.5);
-  const dur=Math.max(.04,(n.e-n.s)/warp),off=when+dur;
-  const rel=p<45?.55:p<62?.42:p<78?.3:.22;          /* the damper falls a little slower on bass strings */
-  g.gain.setValueAtTime(amp,when);
-  g.gain.setValueAtTime(amp,off);
+  const rate=Math.pow(2,(p-s+cents/100)/12);
+  src.buffer=buf;src.playbackRate.value=rate;
+  /* mallets and plucked strings ring out whatever the written length */
+  const off=it.ring?when+Math.max(dur,buf.duration/rate):when+dur;
+  const rel=it.rel(p);
+  g.gain.setValueAtTime(amp0,when);
+  g.gain.setValueAtTime(amp0,off);
   g.gain.setTargetAtTime(0,off,rel/4.5);
   src.connect(g);g.connect(dest);
-  src.start(when);src.stop(off+rel+.08);
+  src.start(when);src.stop(Math.min(off,when+buf.duration/rate)+rel+.08);
   return {src,g,end:off+rel};
+}
+function synthVoice(ctx,dest,n,when,off,amp){
+  const f=440*Math.pow(2,(n.p-69+(n.c||0)/100)/12);
+  const flt=ctx.createBiquadFilter(),g=ctx.createGain();
+  flt.type="lowpass";flt.Q.value=3;
+  const hi=Math.min(f*16,11000),lo=Math.min(Math.max(f*3,600),5000);
+  flt.frequency.setValueAtTime(hi,when);flt.frequency.setTargetAtTime(lo,when+.004,.16);
+  flt.frequency.setTargetAtTime(Math.max(200,lo*.5),off,.08);
+  const oscs=[["sawtooth",-8,.5],["sawtooth",8,.5],["square",-1200,.28]].map(([t,det,lv])=>{
+    const o=ctx.createOscillator(),og=ctx.createGain();
+    o.type=t;o.frequency.value=f;o.detune.value=det;og.gain.value=lv;o.connect(og);og.connect(flt);return o;
+  });
+  const a=amp*.62;
+  g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(a,when+.006);
+  g.gain.setTargetAtTime(a*.72,when+.006,.12);
+  g.gain.setTargetAtTime(0,off,.08);
+  flt.connect(g);g.connect(dest);
+  oscs.forEach(o=>{o.start(when);o.stop(off+.6);});
+  return {src:{stop:t=>oscs.forEach(o=>{try{o.stop(t);}catch(_){}})},g,end:off+.5};
 }
 function click(ctx,dest,when,accent){
   const o=ctx.createOscillator(),g=ctx.createGain();
@@ -1871,10 +1959,82 @@ function click(ctx,dest,when,accent){
   g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(accent?.5:.32,when+.002);g.gain.exponentialRampToValueAtTime(.0001,when+.06);
   o.connect(g);g.connect(dest);o.start(when);o.stop(when+.08);
 }
-function updatePianoStat(){
+function updateSoundStat(){
   const el=$("pianoStat");if(!el)return;
-  const have=LAYERS.filter(l=>PIANO.buf[l]).map(l=>LAYER_NAME[l]);
-  el.textContent=`Salamander Grand Piano — 3 velocity layers, stereo, 44.1 kHz. ${have.length?"Loaded: "+have.join(", ")+".":"Samples load the first time you press play."}`;
+  const it=curInst();
+  const have=it.layers.filter(l=>SND.buf[sndKey(it,l)]).length;
+  el.textContent=`${it.name} — ${it.desc}. ${it.osc?"No download needed.":have?`Loaded ${have} of ${it.layers.length} layer${it.layers.length===1?"":"s"}.`:"Samples load the first time you press play."}`;
+}
+function setInstrument(id,silent){
+  const it=instOf(id);
+  const was=PB.playing,pos=curPos();
+  if(was){silence(true);PB.playing=false;clearInterval(PB.timer);PB.pos=pos;}
+  prefs.instrument=it.id;
+  freeOtherInstruments(it.id);
+  syncInstUI();updateSoundStat();markDirty();
+  if(!silent)toast(`${it.name}`,{icon:IC.music,dur:1300});
+  if(was)play();
+}
+function syncInstUI(){
+  const it=curInst();
+  $("instLabel").textContent=it.short;
+  $("btnInst").title=`Instrument: ${it.name} (⌘⇧O for the next one)`;
+  const sel=$("setInst");if(sel)sel.value=it.id;
+  paintInfo();
+}
+
+/* ============================== SUSTAIN PEDAL (codeABC extension) ==============================
+   !ped! presses the damper pedal at the note it is attached to and !ped-up! lifts it (+ped+ and
+   +ped-up+ work too). abcjs doesn't know them, so before engraving they become "Ped." / "*"
+   annotations under the staff; a position map turns every character position abcjs reports
+   back into a position in your own text. */
+const PED_RX=/!ped(-up)?!|\+ped(-up)?\+/g;
+let prepCache={src:null,res:null};
+function prepAbc(src){
+  if(prepCache.src===src)return prepCache.res;
+  const marks=[];let out="",last=0,m;
+  PED_RX.lastIndex=0;
+  while(m=PED_RX.exec(src)){
+    out+=src.slice(last,m.index);
+    const up=!!(m[1]||m[2]),rep=up?'"_*"':'"_Ped."';
+    marks.push({p:out.length,o:m.index,lp:rep.length,lo:m[0].length,up});
+    out+=rep;last=m.index+m[0].length;
+  }
+  out+=src.slice(last);
+  const toOrig=i=>{
+    if(!marks.length||!Number.isFinite(i))return i;
+    let d=0;
+    for(const k of marks){if(i<k.p)break;if(i<k.p+k.lp)return k.o;d+=k.lo-k.lp;}
+    return i+d;
+  };
+  const res={text:out,marks,toOrig};
+  prepCache={src,res};
+  return res;
+}
+function applyPedal(notes,prep,tuneIdx,total){
+  notes.forEach(n=>{n.pe=n.e;});
+  if(!prep.marks.length)return[];
+  const xs=[];const rx=/^X:/gm;let m;while(m=rx.exec(prep.text))xs.push(m.index);
+  const a=xs.length?xs[tuneIdx]||0:0,b=xs.length&&xs[tuneIdx+1]!=null?xs[tuneIdx+1]:prep.text.length;
+  const bySc=notes.filter(n=>Number.isFinite(n.sc)).sort((x,y)=>x.sc-y.sc);
+  const evs=[];
+  for(const k of prep.marks){
+    if(k.p<a||k.p>=b)continue;
+    let lo=0,hi=bySc.length;while(lo<hi){const mid=(lo+hi)>>1;if(bySc[mid].sc<k.p)lo=mid+1;else hi=mid;}
+    const t=lo<bySc.length?bySc[lo].s:total;
+    evs.push({t,down:!k.up,o:k.p});
+  }
+  evs.sort((x,y)=>x.t-y.t||(x.down===y.down?x.o-y.o:x.down?1:-1));     /* lift before re-pressing */
+  const ints=[];let down=false,from=0;
+  for(const e of evs){
+    if(e.down){if(down)ints.push([from,e.t]);from=e.t;down=true;}
+    else if(down){ints.push([from,e.t]);down=false;}
+  }
+  if(down)ints.push([from,Infinity]);
+  for(const n of notes){
+    for(const[x,y]of ints){if(n.e>=x-1e-6&&n.e<y){n.pe=y===Infinity?total+2.5:y;break;}}
+  }
+  return ints;
 }
 
 /* ============================== PLAYBACK ============================== */
@@ -1883,7 +2043,7 @@ function perfVis(){
   /* the engraved score when it is up to date, otherwise a silent parse (works in Write mode too) */
   const n=activeNote();if(!n||!hasABC())return[];
   if(scoreSrc===n.content&&scoreVis.length)return scoreVis;
-  try{computeLineStarts(n.content);return parseAll(n.content);}catch(e){return[];}
+  try{computeLineStarts(n.content);return parseAll(prepAbc(n.content).text);}catch(e){return[];}
 }
 function buildPerf(){
   const n=activeNote();if(!n)return null;
@@ -1912,7 +2072,9 @@ function buildPerf(){
   });
   out.sort((a,b)=>a.s-b.s||a.p-b.p);
   const beats=vo.getBeatsPerMeasure?vo.getBeatsPerMeasure():4;
-  PB.perf={notes:out,total:Math.max(flat.totalDuration*wn,out.length?out[out.length-1].e:0),wn,tempo:flat.tempo,beats,msm,vo};
+  const total=Math.max(flat.totalDuration*wn,out.length?out[out.length-1].e:0);
+  const pedalInts=applyPedal(out,prepAbc(n.content),PB.tune,total);
+  PB.perf={notes:out,total,wn,tempo:flat.tempo,beats,msm,vo,pedalInts};
   PB.perfKey=key;
   return PB.perf;
 }
@@ -1927,29 +2089,31 @@ function buildHighlightEvents(){
     /* align the engraver's clock with the audio clock */
     const last=(tc.noteTimings||[]).reduce((m,e)=>Math.max(m,e.milliseconds||0),0)/1000;
     const k=last>0&&perf.total>0?perf.total/last:1;
-    PB.events=ts.map(e=>({t:(e.milliseconds/1000)*k,els:[].concat(...(e.elements||[])).filter(Boolean),sc:e.startChar,ec:e.endChar,top:e.top}));
+    const map=prepAbc(activeNote().content).toOrig;
+    PB.events=ts.map(e=>({t:(e.milliseconds/1000)*k,els:[].concat(...(e.elements||[])).filter(Boolean),sc:map(e.startChar),ec:map(e.endChar),top:e.top}));
   }catch(e){PB.events=[];}
 }
 const curPos=()=>PB.playing&&AC?PB.p0+Math.max(0,AC.currentTime-PB.t0)*PB.warp:PB.pos;
-function needLayers(perf){return [...new Set(perf.notes.map(n=>layerFor(n.v)))];}
-async function ensureLayers(perf,label){
-  const need=needLayers(perf).filter(l=>!PIANO.buf[l]);
+function needLayers(it,perf){return it.osc?[]:[...new Set(perf.notes.map(n=>it.pick(n.v)))];}
+async function ensureLayers(perf){
+  const it=curInst();
+  const need=needLayers(it,perf).filter(l=>!SND.buf[sndKey(it,l)]);
   if(!need.length)return true;
   setLoading(true,0);
   const prog={};
-  pianoProgress=(L,f)=>{prog[L]=f;const tot=need.reduce((a,l)=>a+(prog[l]||0),0)/need.length;setLoading(true,tot);};
-  try{await Promise.all(need.map(loadLayer));return true;}
+  sndProgress=(key,f)=>{prog[key]=f;const tot=need.reduce((a,l)=>a+(prog[sndKey(it,l)]||0),0)/need.length;setLoading(true,tot);};
+  try{await Promise.all(need.map(l=>loadLayer(it,l)));return true;}
   catch(e){
     console.error(e);
-    if(LAYERS.some(l=>PIANO.buf[l]))return true;
-    toast(navigator.onLine===false?"Piano samples aren’t cached yet — connect once to download them":"Couldn’t load the piano samples",{kind:"danger",icon:IC.warn,dur:4200});sfx("error");
+    if(it.layers.some(l=>SND.buf[sndKey(it,l)]))return true;
+    toast(navigator.onLine===false?`${it.name} samples aren’t cached yet — connect once to download them`:`Couldn’t load the ${it.name.toLowerCase()} samples`,{kind:"danger",icon:IC.warn,dur:4200});sfx("error");
     return false;
-  }finally{pianoProgress=null;setLoading(false);}
+  }finally{sndProgress=null;setLoading(false);}
 }
 function setLoading(on,f){
   PB.loading=on;
   $("tpPlay").classList.toggle("loading",on);
-  if(on)$("tpInfo").innerHTML=`loading grand piano <b>${Math.round((f||0)*100)}%</b>`;
+  if(on)$("tpInfo").innerHTML=`loading ${esc(curInst().name.toLowerCase())} <b>${Math.round((f||0)*100)}%</b>`;
   else paintInfo();
 }
 function unlockAudio(){
@@ -2048,7 +2212,8 @@ function auditionNotes(pitches){
     const t=AC.currentTime+.02;
     pitches.slice(0,6).forEach(p=>voice(AC,PB.chain.input,{p:p.pitch,s:0,e:.5,v:p.volume||86,c:p.cents||0},t,1));
   };
-  if(PIANO.buf[10])go();else loadLayer(10).then(go).catch(()=>{});
+  const it=curInst(),L=it.pick(86);
+  if(it.osc||SND.buf[sndKey(it,L)])go();else loadLayer(it,L).then(go).catch(()=>{});
 }
 /* ---------- transport UI ---------- */
 function frame(){
@@ -2098,7 +2263,7 @@ function paintInfo(){
   if(PB.loading)return;
   const perf=PB.perf,n=activeNote();
   const i=n?abcInfo(n.content):null;
-  const bits=["grand piano"];
+  const bits=[curInst().name.toLowerCase()];
   if(i&&i.key)bits.push("K:"+i.key);
   if(perf&&perf.tempo)bits.push(`♩=${Math.round(perf.tempo*PB.warp)}`);
   $("tpInfo").innerHTML=esc(bits.join(" · "));
@@ -2169,15 +2334,44 @@ function tuneTitleFor(perf){
   const n=activeNote(),i=abcInfo(n.content);
   return (i.titles[PB.tune]||titleOf(n));
 }
+/* A standard MIDI file written here rather than by abcjs, so it carries the chosen instrument
+   (General MIDI program) and the sustain pedal (controller 64) as well as the notes. */
+function vlq(n){n=Math.max(0,Math.round(n));const b=[n&127];while(n>>=7)b.unshift((n&127)|128);return b;}
 function exportMidi(){
   const perf=currentPerfOrWarn();if(!perf)return;
   try{
-    const qpm=Math.round(perf.tempo*PB.warp);
-    const bin=ABCJS.synth.getMidiFile(perf.vo,{midiOutputType:"binary",chordsOff:!prefs.chords,qpm,program:0});
-    const bytes=Array.isArray(bin)?bin[0]:bin;
-    const name=slug(tuneTitleFor(perf))+".midi";
-    downloadBlob(name,new Blob([bytes],{type:"audio/midi"}));
-    toast(`Exported ${name}${PB.warp!==1?` · ♩=${qpm}`:""}`,{kind:"ok",icon:IC.midi,dur:2600});sfx("create");
+    const it=curInst(),PPQ=480,qs=perf.wn/4;
+    const tick=t=>Math.round(t/qs*PPQ);
+    const usq=Math.round(qs/PB.warp*1e6);
+    const title=tuneTitleFor(perf);
+    const mf=perf.vo.getMeterFraction?perf.vo.getMeterFraction():{num:4,den:4};
+    const bytes=str=>Array.from(new TextEncoder().encode(str));
+    const meta=(type,data)=>[255,type,...vlq(data.length),...data];
+    const t0=[0,...meta(3,bytes(title)),0,...meta(81,[usq>>16&255,usq>>8&255,usq&255]),
+      0,...meta(88,[clamp(mf.num||4,1,32),Math.round(Math.log2(mf.den||4)),24,8]),0,...meta(47,[])];
+    const ev=[{t:0,o:0,b:[192,it.gm]},{t:0,o:0,b:[176,7,110]},{t:0,o:0,b:[176,64,0]}];
+    let end=0;
+    for(const n of perf.notes){
+      const on=tick(n.s),off=Math.max(on+1,tick(n.e)),p=clamp(Math.round(n.p),0,127);
+      ev.push({t:on,o:3,b:[144,p,clamp(Math.round(n.v),1,127)]},{t:off,o:1,b:[128,p,0]});
+      end=Math.max(end,off);
+    }
+    let pedals=0;
+    if(it.pedal){
+      (perf.pedalInts||[]).forEach(([x,y])=>{
+        ev.push({t:tick(x),o:4,b:[176,64,127]});
+        const u=y===Infinity?end+tick(.5):tick(y);ev.push({t:u,o:2,b:[176,64,0]});end=Math.max(end,u);pedals++;
+      });
+    }
+    ev.sort((a,b)=>a.t-b.t||a.o-b.o);
+    const t1=[0,...meta(3,bytes(it.name))];let last=0;
+    for(const e of ev){t1.push(...vlq(e.t-last),...e.b);last=e.t;}
+    t1.push(...vlq(PPQ),...meta(47,[]));
+    const chunk=(id,data)=>[...bytes(id),data.length>>>24&255,data.length>>16&255,data.length>>8&255,data.length&255,...data];
+    const file=new Uint8Array([...chunk("MThd",[0,1,0,2,PPQ>>8,PPQ&255]),...chunk("MTrk",t0),...chunk("MTrk",t1)]);
+    const name=slug(title)+".midi";
+    downloadBlob(name,new Blob([file],{type:"audio/midi"}));
+    toast(`Exported ${name} · ${it.name.toLowerCase()}${pedals?` · ${pedals} pedal${pedals===1?"":"s"}`:""}${PB.warp!==1?` · ${Math.round(perf.tempo*PB.warp)} bpm`:""}`,{kind:"ok",icon:IC.midi,dur:2800});sfx("create");
   }catch(e){console.error(e);toast("MIDI export failed",{kind:"danger",icon:IC.warn});sfx("error");}
 }
 let wavBusy=false;
@@ -2190,7 +2384,7 @@ async function exportWav(){
   try{
     unlockAudio();
     if(!(await ensureLayers(perf)))return;
-    toast("Recording the piano… (WAV)",{icon:IC.wave,dur:3000});
+    toast(`Recording the ${curInst().name.toLowerCase()}… (WAV)`,{icon:IC.wave,dur:3000});
     const sr=44100,warp=PB.warp,lead=.05,tail=3.2;
     const len=Math.ceil((lead+perf.total/warp+tail)*sr);
     const ctx=new OAC(2,len,sr);
@@ -2265,7 +2459,7 @@ async function exportPDF(ids){
     for(const n of list){
       const src=n.content,count=tuneCountOf(src);
       holder.innerHTML=Array.from({length:count},()=>"<div></div>").join("");
-      ABCJS.renderAbc([...holder.children],src,{oneSvgPerLine:true,staffwidth:Math.round(cw/px2pt)-2,paddingleft:1,paddingright:1,paddingtop:2,paddingbottom:2,foregroundColor:"#000000",add_classes:false,jazzchords:true});
+      ABCJS.renderAbc([...holder.children],prepAbc(src).text,{oneSvgPerLine:true,staffwidth:Math.round(cw/px2pt)-2,paddingleft:1,paddingright:1,paddingtop:2,paddingbottom:2,foregroundColor:"#000000",add_classes:false,jazzchords:true});
       for(const tdiv of holder.children){
         const svgs=[...tdiv.querySelectorAll("svg")];
         if(!svgs.length)continue;
@@ -2374,7 +2568,7 @@ function applyWholeText(text){
 /* ============================== DOM REFS ============================== */
 const app=$("app"),scrim=$("scrim"),noteList=$("noteList"),workspace=$("workspace"),
   searchEl=$("search"),segThumb=$("segThumb"),toasts=$("toasts"),
-  popSettings=$("popSettings"),popNote=$("popNote"),popFolder=$("popFolder"),popMove=$("popMove"),popExport=$("popExport"),
+  popSettings=$("popSettings"),popNote=$("popNote"),popFolder=$("popFolder"),popMove=$("popMove"),popExport=$("popExport"),popInst=$("popInst"),
   dlgWrap=$("dlgWrap"),dlgInput=$("dlgInput"),infoWrap=$("infoWrap");
 const segBtns=[...document.querySelectorAll("#seg button")];
 const mqWide=window.matchMedia("(min-width: 900px)");
@@ -2818,13 +3012,19 @@ function exportRows(id){
     {ic:IC.abcfile,lab:"Export as .abc",k:"⌘⇧A",fn:()=>exportAbc(id)},
     {ic:IC.pdf,lab:"Export sheet music (PDF)",k:"⌘⇧P",fn:()=>exportPDF([id])},
     {ic:IC.midi,lab:"Export as .midi",k:"⌘⇧M",fn:()=>exportMidi()},
-    {ic:IC.wave,lab:"Export piano audio (.wav)",k:"⌘⇧U",fn:()=>exportWav()}
+    {ic:IC.wave,lab:`Export ${curInst().name.toLowerCase()} audio (.wav)`,k:"⌘⇧U",fn:()=>exportWav()}
   ];
+}
+function buildInstPop(){
+  const cur=curInst().id;
+  popInst.innerHTML=`<div class="pop-title">INSTRUMENT</div>`+INSTR.map((it,i)=>`<button class="menu-row inst-row${it.id===cur?" here":""}" type="button" data-inst="${it.id}">${IC.music}<span class="mtxt"><span class="mlab">${esc(it.name)}</span><span class="mdesc">${esc(it.desc)}</span></span><span class="tcheck">${IC.check}</span></button>`).join("")+
+    `<div class="pop-foot">Every voice in the tune plays on this instrument. ⌘⇧O moves to the next one.</div>`;
+  popInst.querySelectorAll("[data-inst]").forEach(b=>b.addEventListener("click",()=>{closePop();setInstrument(b.dataset.inst);sfx("toggle");}));
 }
 function buildExportPop(){
   const n=activeNote();if(!n)return;
   const rows=exportRows(n.id);
-  popExport.innerHTML=menuHTML("Export "+titleOf(n),rows)+`<div class="pop-foot">MIDI and WAV use the tempo slider${tuneCountOf(n.content)>1?" and the tune picked beside the timeline":""}.</div>`;
+  popExport.innerHTML=menuHTML("Export "+titleOf(n),rows)+`<div class="pop-foot">MIDI and WAV use the instrument and the tempo slider${tuneCountOf(n.content)>1?" and the tune picked beside the timeline":""}.</div>`;
   bindMenu(popExport,rows);
 }
 function syncSoundUI(){
@@ -2837,6 +3037,7 @@ function sanitizePrefs(){
   const D=DEF_PREFS,ok=(k,list)=>{if(!list.includes(prefs[k]))prefs[k]=D[k];};
   ok("pdfSize",Object.keys(PDF_PAGES));ok("pdfMargin",Object.keys(PDF_MARGINS));ok("pdfPaper",Object.keys(PDF_PAPERS));
   ok("scoreColors",["theme","paper"]);
+  if(typeof INSTR!=="undefined")ok("instrument",INSTR.map(i=>i.id));
   if(!["folder","all","pinned"].includes(prefs.filter))prefs.filter="folder";
   if(!["write","score"].includes(prefs.mode))prefs.mode="write";
   if(!FONTS.some(f=>f.id===prefs.font))prefs.font="sf";
@@ -3077,6 +3278,7 @@ const INFO=[
 <li><b>Write</b> — the ABC code, with syntax highlighting in the colours of your theme, line numbers, and an insert bar of ABC symbols above the editor. Lines with a problem get a red line number.</li>
 <li><b>Score</b> — the engraved sheet music with the player on top: <b>▶ play / ❚❚ pause</b>, ■ stop, a timeline you can drag, a tempo slider, loop, and the ⤓ export menu.</li>
 </ul>
+<p>The <b>♫ instrument button</b> in the top bar switches the sound: grand piano, harpsichord, clavichord, electric piano, classical guitar, pizzicato strings, vibraphone, marimba, xylophone or synthesizer.</p>
 <p>Switch with the Write / Score buttons or ${K("⌘E")}. You can also press ${K("⌘↵")} while writing to hear the tune without leaving the code; the line being played is marked in the gutter.</p>
 <h3>Your first tune</h3>
 ${ex(["X:1","T:My first tune","M:4/4","L:1/4","K:G","G A B c | d2 B2 | c A F D | G4 |]"])}
@@ -3121,14 +3323,53 @@ ${ex(["(3ABc (3:2:4ABcd      % triplet; general tuplet","{g}A {/g}A {gag}A     %
 ${ex(["G G A B | c2 B2 |","w:Twin-kle twin-kle lit-tle star","% - splits a word, _ holds a syllable, * skips a note, | jumps to the next bar"])}
 <h3>Several voices</h3>
 ${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] d2 GA Bc | d2 G2 G2 |","[V:LH] [G,B,D]4 A,2 | B,6 |"])}
+<h3>Sustain pedal <span class="muted">— a codeABC extension</span></h3>
+<p>Standard ABC has no way to write the sustain (damper) pedal, so codeABC adds two decorations, written like any other <code>!…!</code> decoration straight before a note:</p>
+<table>
+<tr><th>Write</th><th>Meaning</th><th>Shown as</th></tr>
+<tr><td><code>!ped!</code></td><td>Press the pedal as this note starts</td><td><i>Ped.</i> under the note</td></tr>
+<tr><td><code>!ped-up!</code></td><td>Lift the pedal as this note starts</td><td><i>*</i> under the note</td></tr>
+<tr><td><code>!ped-up!!ped!</code></td><td>Change the pedal: lift and press again on the same note</td><td><i>*</i> and <i>Ped.</i></td></tr>
+</table>
+${ex(["%%score {RH LH}","V:RH clef=treble","V:LH clef=bass","[V:RH] !ped!c2 e2 g2 c'2 | !ped-up!!ped!d2 f2 a2 d'2 | !ped-up!e8 |]","[V:LH] C,8 | D,8 | C,8 |]"])}
+<ul>
+<li>While the pedal is down, every note you release keeps ringing until the pedal lifts, exactly like a real damper pedal. Notes released before the pedal goes down are not caught.</li>
+<li>One pedal serves the whole tune, whichever voice the marking is written in — put it in the bass or the melody, whichever reads best.</li>
+<li>A <code>!ped!</code> with no <code>!ped-up!</code> holds to the end of the tune.</li>
+<li>It plays on instruments that have a pedal: <b>grand piano, electric piano, vibraphone and synthesizer</b>. Harpsichord, clavichord, guitar, pizzicato and the mallets ignore it, as the real ones would.</li>
+<li><code>+ped+</code> and <code>+ped-up+</code> work too. MIDI exports carry the pedal as controller 64, so DAWs and notation programs read it.</li>
+<li>Other ABC programs don't know these decorations: they will warn about them or skip them, but the rest of the tune still works.</li>
+</ul>
+<h3>Spacing the score</h3>
+<p>When staves sit too close together — lyrics colliding with the next system, or two hands of a piano part crowding — add these directives near the top of the tune (after <code>X:</code>, or before it to cover every tune in the file):</p>
+<table>
+<tr><th>Directive</th><th>What it spaces</th></tr>
+<tr><td><code>%%staffsep 70</code></td><td>The gap between <b>systems</b> — one line of music and the next (default about 46)</td></tr>
+<tr><td><code>%%sysstaffsep 40</code></td><td>The gap between <b>staves inside one system</b>, e.g. right and left hand (default about 34)</td></tr>
+</table>
+${ex(["X:1","T:More room","%%staffsep 80","%%sysstaffsep 50","%%score {RH LH}","K:C"])}
+<p>Bigger numbers mean more space; try steps of 10. <code>%%vocalspace</code> adds room for lyrics, <code>%%musicspace</code> for the space above the first staff, and Settings → Score → <i>Score size</i> zooms everything. The same spacing is used in PDF exports.</p>
 <h3>Changes mid-tune &amp; layout</h3>
-${ex(["[K:D] [M:3/4] [Q:1/4=90]   % inline key, meter and tempo changes","% a new line in the code is a new line in the score; end a line with \\ to join it to the next","%%staffsep 60   %%scale 0.9   % abc directives start with %%"])}
+${ex(["[K:D] [M:3/4] [Q:1/4=90]   % inline key, meter and tempo changes","% a new line in the code is a new line in the score; end a line with \\ to join it to the next","%%scale 0.9               % abc directives start with %% (spacing: see above)"])}
 <h3>Comments</h3>
 <p>Anything after <code>%</code> is a comment (${K("⌘/")} comments lines in and out). A blank line ends a tune; the next one starts with its own <code>X:</code>.</p>`},
   {id:"play",name:"Playback & export",html:()=>`
-<h3>The piano</h3>
-<p>Every note is played by a <b>Salamander Grand Piano</b> — recordings of a Yamaha C5 concert grand, sampled every minor third across all 88 keys in three velocity layers, in stereo at 44.1 kHz, through a concert hall reverb. Each note is never pitch-shifted more than a semitone, and dynamics (<code>!p!</code>, <code>!f!</code>, accents) switch between the soft, medium and loud recordings, so the tone changes as well as the volume. Every voice and instrument in a tune is played on the piano.</p>
-<p>The first play downloads the samples the tune needs (about 3 MB per layer), then they are cached.</p>
+<h3>Instruments</h3>
+<p>Choose the sound with the <b>♫ button</b> in the top bar (or ${K("⌘⇧O")} to step through them, or Settings → Score). Every voice in the tune plays on the instrument you pick; the choice is remembered.</p>
+<table>
+<tr><th>Instrument</th><th>Source</th><th>Pedal</th></tr>
+<tr><td><b>Grand piano</b></td><td>Salamander Grand Piano: a Yamaha C5 recorded at every minor third, 3 velocity layers</td><td>yes</td></tr>
+<tr><td><b>Harpsichord</b></td><td>Recorded multisamples (GeneralUser GS); like the real thing it has one volume, and notes stop when released</td><td>—</td></tr>
+<tr><td><b>Clavichord</b></td><td>A physical model of the real mechanism — two strings per key struck by a brass tangent, with the slight pitch rise of the tangent and a soundboard</td><td>—</td></tr>
+<tr><td><b>Electric piano</b></td><td>Tine electric piano, 2 velocity layers</td><td>yes</td></tr>
+<tr><td><b>Classical guitar</b></td><td>Nylon-string guitar, 2 velocity layers</td><td>—</td></tr>
+<tr><td><b>Pizzicato strings</b></td><td>Plucked string section; notes ring out</td><td>—</td></tr>
+<tr><td><b>Vibraphone</b></td><td>2 velocity layers; damped on release unless the pedal is down</td><td>yes</td></tr>
+<tr><td><b>Marimba</b>, <b>Xylophone</b></td><td>2 velocity layers; bars ring out naturally</td><td>—</td></tr>
+<tr><td><b>Synthesizer</b></td><td>Generated live: two detuned sawtooth oscillators and a sub-octave square through a resonant filter</td><td>yes</td></tr>
+</table>
+<p>Recorded instruments are sampled every minor third, so no note is pitch-shifted by more than a semitone and a half, and each sample is corrected by its measured tuning. All play in stereo at 44.1 kHz through the concert hall reverb. Dynamics (<code>!p!</code>, <code>!f!</code>, accents) change the volume and, on instruments with layers, switch to a softer or harder recording so the tone changes too.</p>
+<p>An instrument's samples download the first time you play it (1–3 MB each, the piano about 3 MB per layer), then they are cached; Settings → Score → <i>Keep all instruments for offline use</i> fetches everything at once.</p>
 <h3>Transport</h3>
 <ul>
 <li><b>▶ / ❚❚</b> play and pause — ${K("⌘↵")}. <b>■</b> stops and rewinds — ${K("⌘.")}.</li>
@@ -3143,8 +3384,8 @@ ${ex(["[K:D] [M:3/4] [Q:1/4=90]   % inline key, meter and tempo changes","% a ne
 <tr><th>Format</th><th>What you get</th><th>Shortcut</th></tr>
 <tr><td><b>.abc</b></td><td>The ABC text itself — opens in any ABC program</td><td>${K("⌘⇧A")}</td></tr>
 <tr><td><b>PDF</b></td><td>Vector sheet music, sharp at any zoom; page size, margins, paper and staff size in Settings → PDF</td><td>${K("⌘⇧P")}</td></tr>
-<tr><td><b>.midi</b></td><td>A standard MIDI file for notation programs and DAWs, at the current tempo</td><td>${K("⌘⇧M")}</td></tr>
-<tr><td><b>.wav</b></td><td>A 16-bit stereo 44.1 kHz recording of the grand piano at the current tempo</td><td>${K("⌘⇧U")}</td></tr>
+<tr><td><b>.midi</b></td><td>A standard MIDI file for notation programs and DAWs, at the current tempo, set to the chosen instrument, with the sustain pedal</td><td>${K("⌘⇧M")}</td></tr>
+<tr><td><b>.wav</b></td><td>A 16-bit stereo 44.1 kHz recording of the chosen instrument at the current tempo</td><td>${K("⌘⇧U")}</td></tr>
 </table>
 <p>Find them under ⤓ on the Score page, in a tune's ⋯ menu, or with the shortcuts. Select several tunes in the sidebar to export them as one .abc tunebook or one PDF.</p>
 <h3>Transposing</h3>
@@ -3162,9 +3403,10 @@ ${row(K("⌘."),"Stop and rewind",1)}
 ${row(K("⌘⇧L"),"Loop on / off",1)}
 ${row(K("⌘⇧↑")+K("⌘⇧↓"),"Tempo faster / slower",1)}
 ${row(K("⌘⇧0"),"Tempo back to 100%",1)}
+${row(K("⌘⇧O"),"Next instrument",1)}
 ${row(K("⌘⇧A"),"Export .abc",1)}
 ${row(K("⌘⇧M"),"Export .midi",1)}
-${row(K("⌘⇧U"),"Export piano audio (.wav)",1)}
+${row(K("⌘⇧U"),"Export audio (.wav)",1)}
 ${row(K("⌘I"),"This guide",1)}
 </div><h3>While writing</h3><div class="kgrid">
 ${row(K("Tab")+K("⇧Tab"),"Indent / outdent")}
@@ -3180,7 +3422,7 @@ ${row(K("[")+K("{")+K('"'),"Close themselves; type the closer to step over it",1
 <ul>
 <li><b>Look</b> — 34 themes (light, dark and CRT) and 32 monospaced typefaces; the ABC highlighting follows the theme.</li>
 <li><b>Editor</b> — font size, line numbers, auto-closing brackets, the playing-line marker, CRT effects and interface sounds.</li>
-<li><b>Score</b> — score size, margins, theme or paper-sheet colours, follow playback, piano volume, reverb, chord symbols and count-in.</li>
+<li><b>Score</b> — score size, margins, theme or paper-sheet colours, follow playback, instrument, volume, reverb, chord symbols, count-in and offline sounds.</li>
 <li><b>PDF</b> — page size, margins, paper colour, staff size, spacing, footer and page numbers.</li>
 <li><b>Library</b> — import, backup, tunebook export and resetting preferences.</li>
 </ul>
@@ -3188,6 +3430,8 @@ ${row(K("[")+K("{")+K('"'),"Close themselves; type the closer to step over it",1
 <ul>
 <li>Engraving, MIDI and transposition: <b>abcjs</b> by Paul Rosen and Gregory Dyke — MIT licence.</li>
 <li>Piano: <b>Salamander Grand Piano V3</b> by Alexander Holm — CC BY 3.0 (MP3 conversions by Jan Forst, MIT).</li>
+<li>Harpsichord, electric piano, guitar, pizzicato strings, vibraphone, marimba and xylophone: <b>GeneralUser GS</b> by S. Christian Collins, rendered to samples with spessasynth.</li>
+<li>Clavichord: a physical model written for codeABC. Synthesizer: generated live with Web Audio.</li>
 <li>PDF: <b>jsPDF</b> and <b>svg2pdf.js</b> — MIT licence.</li>
 <li>ABC notation standard by Chris Walshaw and the ABC community — abcnotation.com.</li>
 </ul>`}
@@ -3209,26 +3453,25 @@ function setIcons(){
     crumbBack:IC.chevL,selToggle:IC.checkSq,selCancel:IC.x,selDelIco:IC.trash,
     btnBackup:IC.dl,btnImport:IC.ul,btnSettings:IC.gear,btnMore:IC.dots,btnPdf:IC.pdf,btnInfo:IC.info,
     emptyPlus:IC.plus,setUploadIco:IC.ul,setExportIco:IC.dl,setAbcIco:IC.abcfile,setPdfIco:IC.pdf,setResetIco:IC.undo,setOfflineIco:IC.cloud,
-    tpPlay:IC.play,tpStop:IC.stop,tpLoop:IC.loop,tpExport:IC.dl,warnIco:IC.warn,infoClose:IC.x
+    instIco:IC.music,tpPlay:IC.play,tpStop:IC.stop,tpLoop:IC.loop,tpExport:IC.dl,warnIco:IC.warn,infoClose:IC.x
   };
   for(const[id,svg]of Object.entries(map)){const el=$(id);if(el)el.innerHTML=svg;}
   segBtns.forEach(b=>{const s=b.querySelector(".sgi");if(s)s.innerHTML=b.dataset.mode==="score"?IC.music:IC.pen;});
 }
 
 /* ============================== OFFLINE ============================== */
-async function keepPianoOffline(){
+async function keepSoundsOffline(){
   ensureAudio();
-  toast("Downloading the grand piano…",{icon:IC.cloud,dur:2500});
+  toast("Downloading every instrument…",{icon:IC.cloud,dur:2500});
+  const urls=[];INSTR.filter(it=>!it.osc).forEach(it=>it.layers.forEach(l=>it.pitches.forEach(p=>urls.push(it.path(l,p)))));
   try{
-    if(window.caches){
-      const c=await caches.open("codeabc-piano");
-      const urls=[];LAYERS.forEach(l=>SAMPLE_P.forEach(p=>urls.push(`piano/v${l}/${p}.mp3`)));
-      let done=0;const q=urls.slice();
-      await Promise.all(Array.from({length:6},async()=>{while(q.length){const u=q.shift();if(!(await c.match(u))){const r=await fetch(u);if(r.ok)await c.put(u,r.clone());}done++;$("pianoStat").textContent=`Saving piano for offline use… ${Math.round(done/urls.length*100)}%`;}}));
-    }else await Promise.all(LAYERS.map(loadLayer));
-    updatePianoStat();
-    toast("Grand piano saved for offline use",{kind:"ok",icon:IC.check,dur:2600});sfx("create");
-  }catch(e){console.error(e);updatePianoStat();toast("Couldn’t download the piano — check your connection",{kind:"danger",icon:IC.warn});}
+    if(!window.caches)throw new Error("no cache storage");
+    const c=await caches.open("codeabc-piano");
+    let done=0;const q=urls.slice();
+    await Promise.all(Array.from({length:6},async()=>{while(q.length){const u=q.shift();if(!(await c.match(u))){const r=await fetch(u);if(r.ok)await c.put(u,r.clone());}done++;$("pianoStat").textContent=`Saving instruments for offline use… ${Math.round(done/urls.length*100)}%`;}}));
+    updateSoundStat();
+    toast("All instruments saved for offline use",{kind:"ok",icon:IC.check,dur:2600});sfx("create");
+  }catch(e){console.error(e);updateSoundStat();toast("Couldn’t download the instruments — check your connection",{kind:"danger",icon:IC.warn});}
 }
 function registerSW(){
   if(!("serviceWorker" in navigator)||location.protocol==="file:")return;
@@ -3293,6 +3536,9 @@ function wire(){
   /* topbar */
   segBtns.forEach(b=>b.addEventListener("click",()=>{ensureAudio();setMode(b.dataset.mode);}));
   $("btnInfo").addEventListener("click",()=>openInfo());
+  $("btnInst").addEventListener("click",()=>{ensureAudio();buildInstPop();openPop(popInst,$("btnInst"));});
+  $("setInst").innerHTML=INSTR.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join("");
+  $("setInst").addEventListener("change",e=>{setInstrument(e.target.value);});
   $("btnPdf").addEventListener("click",()=>{if(activeId)exportPDF([activeId]);});
   $("btnSettings").addEventListener("click",()=>{ensureAudio();openPop(popSettings,$("btnSettings"));});
   $("btnMore").addEventListener("click",()=>{if(!activeId)return;buildNoteMenu(activeId);openPop(popNote,$("btnMore"));});
@@ -3353,7 +3599,7 @@ function wire(){
   }));
   SELECTS.forEach(([id,k])=>$(id).addEventListener("change",e=>{prefs[k]=e.target.value;markDirty();if(k==="scoreColors")applyScoreLook();}));
   $("setSnd").addEventListener("change",e=>{ensureAudio();prefs.sound=e.target.checked;syncSoundUI();markDirty();sfx("toggle");});
-  $("setOffline").addEventListener("click",()=>keepPianoOffline());
+  $("setOffline").addEventListener("click",()=>keepSoundsOffline());
   $("setUpload").addEventListener("click",()=>{closePop();$("fileInput").click();});
   $("setExport").addEventListener("click",()=>{closePop();backupAll();});
   $("setExportAbc").addEventListener("click",()=>{closePop();exportTunebook(notes.slice().sort((a,b)=>b.updated-a.updated).map(n=>n.id));});
@@ -3425,6 +3671,7 @@ function wire(){
     if(e.shiftKey&&k==="a"){e.preventDefault();exportAbc(activeId);return;}
     if(e.shiftKey&&k==="m"){e.preventDefault();exportMidi();return;}
     if(e.shiftKey&&k==="u"){e.preventDefault();exportWav();return;}
+    if(e.shiftKey&&k==="o"){e.preventDefault();const i=INSTR.findIndex(x=>x.id===prefs.instrument);setInstrument(INSTR[(i+1)%INSTR.length].id);return;}
     if(e.shiftKey&&k==="l"){e.preventDefault();prefs.loop=!prefs.loop;syncPlayUI();markDirty();toast(prefs.loop?"Loop on":"Loop off",{icon:IC.loop,dur:1200});return;}
     if(e.shiftKey&&(k==="arrowup"||k==="arrowdown"||code==="Digit0")){
       e.preventDefault();
@@ -3536,7 +3783,7 @@ function init(){
   setMode(prefs.mode==="score"?"score":"write",true);
   syncChips();
   renderList(true);
-  updateStats();updatePianoStat();
+  updateStats();updateSoundStat();syncInstUI();
   const tick=()=>{$("stClock").textContent=new Date().toTimeString().slice(0,5);};
   tick();setInterval(tick,20000);
   setInterval(()=>{if(!dragging){renderList();updateTopbar();}},60000);

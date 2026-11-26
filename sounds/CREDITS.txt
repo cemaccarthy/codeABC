@@ -1,0 +1,8 @@
+Instrument samples for codeABC
+Harpsichord, electric piano, classical guitar, pizzicato strings, vibraphone, marimba, xylophone:
+  rendered note by note from GeneralUser GS v1.471 by S. Christian Collins (http://www.schristiancollins.com),
+  licence in GeneralUser-GS-LICENSE.txt. Rendered with spessasynth_core at 44.1 kHz stereo, with the
+  soundfont's reverb and chorus off, then encoded as VBR MP3 (about 190 kbps).
+  Folders: sounds/<instrument>/v<velocity>/<MIDI note>.mp3, one sample every minor third.
+Clavichord: a physical model written for codeABC (two tangent-struck waveguide strings and a soundboard),
+  rendered to samples the same way.
