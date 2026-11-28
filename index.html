@@ -2820,6 +2820,56 @@ function perfVis(){
   if(scoreSrc===n.content&&scoreVis.length)return scoreVis;
   try{computeLineStarts(n.content);return parseAll(prepAbc(n.content).text);}catch(e){return[];}
 }
+/* Which instrument each voice plays. abcjs reads %%MIDI program lines in the tune header as
+   tune-wide, so voices declared before K: would all get the last one; and an instrument line written
+   just above a V: line would go to the voice before it. So the score is read here instead:
+   a program line belongs to the voice declared right above it, else to the V: line right below it
+   (when it sits between voices), else to the voice that is playing — so a voice can also change
+   instrument part-way through. Returns, for a position in the text, the program to use. */
+function voicePrograms(text,a,b){
+  const segs=[],asg=new Map();let def=null;
+  const add=(v,pos,prog)=>{if(v==null){if(def==null)def=prog;return;}if(!asg.has(v))asg.set(v,[]);asg.get(v).push([pos,prog]);};
+  const lines=[];{let i=a;for(const l of text.slice(a,b).split("\n")){lines.push({l,pos:i});i+=l.length+1;}}
+  const vOf=l=>{const m=l.match(/^V:\s*([^\s\]%]+)/);return m?m[1]:null;};
+  const progOf=l=>{const m=l.match(/^%%MIDI\s+program\s+((?:\d+\s+)?\d+)/i);if(!m)return null;const n=m[1].trim().split(/\s+/);return +n[n.length-1];};
+  const isBlank=l=>!l.trim()||/^%(?!%)/.test(l);
+  let cur=null,inBody=false,prevKind="none",first=null;
+  lines.forEach(({l,pos},i)=>{
+    if(isBlank(l))return;
+    const v=vOf(l);
+    if(v!=null){cur=v;if(first==null)first=v;segs.push([pos,v]);prevKind="V";return;}
+    if(/^K:/.test(l)){inBody=true;cur=null;segs.push([pos,null]);prevKind="K";return;}
+    const pr=progOf(l);
+    if(pr!=null){
+      let target=cur;
+      if(prevKind!=="V"){
+        /* standing on its own: if the next real line declares a voice, it is that voice's */
+        let j=i+1;while(j<lines.length&&isBlank(lines[j].l))j++;
+        const nv=j<lines.length?vOf(lines[j].l):null;
+        if(nv!=null)target=nv;
+      }
+      add(target,inBody?pos:-1,pr);
+      if(prevKind!=="V")prevKind="P";
+      return;
+    }
+    if(/^[A-Za-z]:/.test(l)||/^%%/.test(l)){return;}
+    prevKind="music";
+    /* inline voice switches and instrument changes inside a music line */
+    const rx=/\[V:\s*([^\s\]]+)[^\]]*\]|\[I:\s*MIDI\s*=?\s*program\s+((?:\d+\s+)?\d+)\s*\]/gi;let m;
+    while(m=rx.exec(l)){
+      if(m[1]){cur=m[1];if(first==null)first=cur;segs.push([pos+m.index,cur]);}
+      else{const n=m[2].trim().split(/\s+/);add(cur,pos+m.index,+n[n.length-1]);}
+    }
+  });
+  if(!asg.size&&def==null)return null;
+  return sc=>{
+    if(!Number.isFinite(sc))return undefined;
+    let v;for(const[pp,vv]of segs){if(pp<=sc)v=vv;else break;}
+    if(v==null)v=first;
+    if(v!=null&&asg.has(v)){let pr;for(const[pp,g]of asg.get(v))if(pp<=sc)pr=g;if(pr!=null)return pr;}
+    return def!=null?def:0;   /* no instrument of its own: the one picked with ♫ */
+  };
+}
 function buildPerf(){
   const n=activeNote();if(!n)return null;
   const key=n.id+"|"+n.content.length+"|"+hashStr(n.content)+"|"+prefs.chords+"|"+PB.tune;
@@ -2834,12 +2884,16 @@ function buildPerf(){
   const msm=vo.millisecondsPerMeasure(flat.tempo);
   const wn=msm/1000/meterSize;
   const out=[];
+  const ptext=prepAbc(n.content).text,xs=[];{const rx=/^X:/gm;let m;while(m=rx.exec(ptext))xs.push(m.index);}
+  const ta=xs.length?xs[PB.tune]||0:0,tb=xs.length&&xs[PB.tune+1]!=null?xs[PB.tune+1]:ptext.length;
+  const vprog=voicePrograms(ptext,ta,tb);
   (flat.tracks||[]).forEach((track,tr)=>{
     let cur=0;
     track.forEach(e=>{
       if(e.cmd==="program"){cur=e.instrument;return;}
       if(e.cmd!=="note"||!(e.duration>0)||!Number.isFinite(e.pitch))return;
-      const ins=e.instrument!==undefined?e.instrument:cur;
+      let ins=e.instrument!==undefined?e.instrument:cur;
+      if(vprog){const vp=vprog(e.startChar);if(vp!==undefined)ins=vp;}
       if(ins===128)return;                                   /* percussion: no piano for drums */
       const gap=Math.min(e.gap||0,e.duration*2/3);
       out.push({p:e.pitch,s:e.start*wn,e:(e.start+e.duration-gap)*wn,v:e.volume==null?90:e.volume,c:e.cents||0,sc:e.startChar,tr,ins:GM_TO_INST(ins)});
