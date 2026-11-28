@@ -28,3 +28,13 @@ Electric bass (sounds/bass-guitar)
 
 Picked bass (sounds/picked-bass)
   Rendered from GeneralUser GS (program 34, Picked Bass) by S. Christian Collins; see its licence above.
+
+Harp, trumpet, French horn, trombone, tuba (sounds/harp, trumpet, horn, trombone, tuba)
+  VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0.
+  Sustain samples trimmed, tuned and given seamless loops; soft (v70) and loud (v110) layers.
+  The horn's E-flat 4 to B4 are rendered from GeneralUser GS (program 60) and level-matched.
+
+Electric guitars
+  Clean (sounds/electric-guitar): tonejs-instruments "guitar-electric", MIT licence.
+  Jazz, muted, overdrive, distortion (sounds/jazz-guitar, muted-guitar, overdrive-guitar,
+  distortion-guitar): rendered from GeneralUser GS programs 26, 28, 29 and 30.
