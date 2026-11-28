@@ -38,3 +38,12 @@ Electric guitars
   Clean (sounds/electric-guitar): tonejs-instruments "guitar-electric", MIT licence.
   Jazz, muted, overdrive, distortion (sounds/jazz-guitar, muted-guitar, overdrive-guitar,
   distortion-guitar): rendered from GeneralUser GS programs 26, 28, 29 and 30.
+
+Saxophones (sounds/soprano-sax, alto-sax, tenor-sax, baritone-sax)
+  "MTG Solo Saxophones" by kinwie (github.com/sfzinstruments/MTG.SoloSax), built from the
+  Music Technology Group (Universitat Pompeu Fabra) sample packs on Freesound
+  (freesound.org/people/MTG/packs/20251, 20239, 20247, 20253).
+  Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0):
+  https://creativecommons.org/licenses/by/4.0/
+  Changes: trimmed, tuned with the library's corrections, re-looped with phase-matched loops,
+  level-matched between dynamics and converted to MP3.
