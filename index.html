@@ -2386,6 +2386,7 @@ function syncInstUI(){
    +ped-up+ work too). abcjs doesn't know them, so before engraving they become "Ped." / "*"
    annotations under the staff; a position map turns every character position abcjs reports
    back into a position in your own text. */
+const SWING_MARK="%\u200b";   /* marks a %%swing line once abcjs no longer sees it */
 const PED_RX=/!-!|!ped(-up)?!|\+ped(-up)?\+|!pizz!|\+pizz\+|!arco!|\+arco\+|^%%instrument\b[^\n]*/gim;
 let prepCache={src:null,res:null};
 function prepAbc(src){
@@ -2410,6 +2411,10 @@ function prepAbc(src){
   }
   out+=src.slice(last);
   out=out.replace(/^%%(?=(?:guitar-|uke-|ukulele-|bass-)?(?:tuning|capo)\b)/gim,"% ");
+  /* %%swing (a codeABC extension): kept in place as a marked comment so its position still counts */
+  {const rx=/^%%swing\b(.*)$/gim;let m;
+    while(m=rx.exec(out)){if(!parseSwing(m[1]))errs.push({line:out.slice(0,m.index).split("\n").length-1,col:1,msg:"Swing needs on, off, light, medium, hard, a ratio like 2:1, a percentage like 64%, or 16 for sixteenths — e.g. %%swing or %%swing 2:1"});}
+    out=out.replace(/^%%(?=swing\b)/gim,SWING_MARK);}
   const toOrig=i=>{
     if(!marks.length||!Number.isFinite(i))return i;
     let d=0;
@@ -2957,6 +2962,46 @@ function voicePrograms(text,a,b){
     return def!=null?def:0;   /* no instrument of its own: the one picked with ♫ */
   };
 }
+/* ============================== SWING (codeABC extension) ==============================
+   %%swing makes pairs of eighth notes long-short, as jazz is played. On its own it is "natural":
+   the ratio follows the tempo, as players' does — about 2.3:1 at a slow ♩=80, 2:1 near ♩=140,
+   lighter and lighter towards straight at very fast tempos. Only the note on the off-beat moves;
+   triplets, dotted rhythms and longer notes stay where they are. A light accent on the swung
+   "and", a lift on beats 2 and 4, and a few milliseconds of human looseness complete the feel. */
+function parseSwing(v){
+  const t=String(v||"").replace(/%.*$/,"").trim().toLowerCase().split(/[\s,]+/).filter(Boolean);
+  const o={on:true,r:null,unit:8,label:"natural"};
+  for(const w of t){
+    let m;
+    if(/^(off|straight|none|no)$/.test(w)){o.on=false;o.label="off";}
+    else if(/^(on|auto|natural|yes|jazz)$/.test(w)){}
+    else if(w==="light"){o.r=.6;o.label="light";}
+    else if(w==="medium"||w==="triplet"){o.r=2/3;o.label="2:1";}
+    else if(w==="hard"||w==="heavy"){o.r=.75;o.label="3:1";}
+    else if(/^(16|16th|16ths|sixteenths?)$/.test(w))o.unit=16;
+    else if(/^(8|8th|8ths|eighths?)$/.test(w))o.unit=8;
+    else if(m=w.match(/^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/)){const a=+m[1],b=+m[2];if(!(b>0&&a/b>=1&&a/b<=4))return null;o.r=a/(a+b);o.label=m[1]+":"+m[2];}
+    else if(m=w.match(/^(\d+(?:\.\d+)?)%$/)){const r=+m[1]/100;if(!(r>=.5&&r<=.8))return null;o.r=r;o.label=m[1]+"%";}
+    else if(m=w.match(/^0?\.\d+$/)){const r=+w;if(!(r>=.5&&r<=.8))return null;o.r=r;o.label=Math.round(r*100)+"%";}
+    else return null;
+  }
+  return o;
+}
+/* the natural ratio for a tempo in beats per minute */
+const autoSwing=bpm=>{const ratio=clamp(2.8-bpm*.0058,1.15,2.5);return ratio/(1+ratio);};
+/* the swing settings of one tune: those before the first X: cover every tune; inside a tune they
+   apply to the music written after them */
+function swingFor(text,a,b){
+  const ch=[];const rx=new RegExp("^"+SWING_MARK+"swing\\b(.*)$","gm");let m;
+  const x0=(text.match(/^X:/m)||{index:0}).index;
+  while(m=rx.exec(text)){
+    if(m.index>=b)break;
+    const g=m.index<x0;if(!g&&m.index<a)continue;
+    const set=parseSwing(m[1]);if(set)ch.push({pos:g?-1:m.index,set});
+  }
+  if(!ch.length)return null;
+  return sc=>{let set=null;for(const c of ch){if(c.pos<=(Number.isFinite(sc)?sc:0))set=c.set;else break;}return set;};
+}
 function buildPerf(){
   const n=activeNote();if(!n)return null;
   const key=n.id+"|"+n.content.length+"|"+hashStr(n.content)+"|"+prefs.chords+"|"+PB.tune;
@@ -2983,15 +3028,48 @@ function buildPerf(){
       if(vprog){const vp=vprog(e.startChar);if(vp!==undefined)ins=vp;}
       if(ins===128)return;                                   /* percussion: no piano for drums */
       const gap=Math.min(e.gap||0,e.duration*2/3);
-      out.push({p:e.pitch,s:e.start*wn,e:(e.start+e.duration-gap)*wn,v:e.volume==null?90:e.volume,c:e.cents||0,sc:e.startChar,tr,ins:GM_TO_INST(ins)});
+      out.push({p:e.pitch,s:e.start*wn,e:(e.start+e.duration-gap)*wn,v:e.volume==null?90:e.volume,c:e.cents||0,sc:e.startChar,tr,ins:GM_TO_INST(ins),ws:e.start,we:e.start+e.duration,gap});
     });
   });
+  /* swing: move the off-beat of every pair, then the accents and a little looseness */
+  const swAt=swingFor(ptext,ta,tb);let swingW=null,swingLabel="";
+  if(swAt){
+    let pk=0;try{pk=vo.getPickupLength?+vo.getPickupLength()||0:0;}catch(_){}
+    const compound=mf&&mf.den===8&&mf.num%3===0,bpm=240/wn;
+    const ratioOf=set=>set.r!=null?set.r:autoSwing(set.unit===16?bpm*2:bpm);
+    swingW=(w,set,tol=1e-3)=>{
+      if(!set||!set.on||(compound&&set.unit===8))return w;
+      const U=set.unit===16?1/8:1/4,q=(w-pk)/U,k=Math.floor(q+1e-6),ph=q-k;
+      if(Math.abs(ph-.5)>tol)return w;
+      return pk+(k+ratioOf(set))*U;
+    };
+    const h32=(a,b,c)=>{let h=2166136261^a;h=Math.imul(h^b,16777619);h=Math.imul(h^c,16777619);h^=h>>>13;return((h>>>0)%1000)/1000-.5;};
+    let used=null;
+    out.forEach((n,i)=>{
+      const set=swAt(n.sc);if(!set||!set.on)return;
+      const s2=swingW(n.ws,set),e2=swingW(n.we,set);
+      if(s2===n.ws&&e2===n.we&&compound&&set.unit===8)return;
+      used=set;
+      n.s=s2*wn;n.e=Math.max(n.s+.02,(e2-n.gap)*wn);
+      let v=n.v;
+      if(s2!==n.ws)v+=4;                                                     /* the swung "and" */
+      else if(mf&&mf.den===4&&(mf.num===4||mf.num===2)){
+        const bq=(n.ws-pk)*4,bi=Math.round(bq);
+        if(Math.abs(bq-bi)<1e-3){const ib=((bi%mf.num)+mf.num)%mf.num;v+=ib%2?3:-2;}    /* 2 and 4 lifted */
+      }
+      const j=h32(Number.isFinite(n.sc)?n.sc:i,n.tr,n.p);
+      n.v=clamp(Math.round(v+j*4),1,127);
+      const dt=j*.008;n.s=Math.max(0,n.s+dt);n.e+=dt;                      /* ±4 ms of looseness */
+    });
+    if(used){const r=used.r!=null?used.r:autoSwing(used.unit===16?bpm*2:bpm);swingLabel=`swing ${(r/(1-r)).toFixed(1)}:1${used.unit===16?" 16ths":""}`;}
+    else swingW=null;
+  }
   out.sort((a,b)=>a.s-b.s||a.p-b.p);
   const beats=vo.getBeatsPerMeasure?vo.getBeatsPerMeasure():4;
   const total=Math.max(flat.totalDuration*wn,out.length?out[out.length-1].e:0);
   const pedalInts=applyPedal(out,prepAbc(n.content),PB.tune,total);
   applyPizz(out,prepAbc(n.content),PB.tune);
-  PB.perf={notes:out,total,wn,tempo:flat.tempo,beats,msm,vo,pedalInts};
+  PB.perf={notes:out,total,wn,tempo:flat.tempo,beats,msm,vo,pedalInts,swingW,swAt,swingLabel};
   PB.perfKey=key;
   return PB.perf;
 }
@@ -3007,7 +3085,9 @@ function buildHighlightEvents(){
     const last=(tc.noteTimings||[]).reduce((m,e)=>Math.max(m,e.milliseconds||0),0)/1000;
     const k=last>0&&perf.total>0?perf.total/last:1;
     const map=prepAbc(activeNote().content).toOrig;
-    PB.events=ts.map(e=>({t:(e.milliseconds/1000)*k,els:[].concat(...(e.elements||[])).filter(Boolean),sc:map(e.startChar),ec:map(e.endChar),top:e.top}));
+    PB.events=ts.map(e=>{let t=(e.milliseconds/1000)*k;
+      if(perf.swingW){const set=perf.swAt(e.startChar);if(set&&set.on)t=perf.swingW(t/perf.wn,set,.02)*perf.wn;   /* engraver times are rounded to the ms */}
+      return{t,els:[].concat(...(e.elements||[])).filter(Boolean),sc:map(e.startChar),ec:map(e.endChar),top:e.top};}).sort((a,b)=>a.t-b.t);
   }catch(e){PB.events=[];}
 }
 const curPos=()=>PB.playing&&AC?PB.p0+Math.max(0,AC.currentTime-PB.t0)*PB.warp:PB.pos;
@@ -3198,6 +3278,7 @@ function paintInfo(){
   const bits=[perf?instSummary(perf):curInst().name.toLowerCase()];
   if(i&&i.key)bits.push("K:"+i.key);
   if(perf&&perf.tempo)bits.push(`♩=${Math.round(perf.tempo*PB.warp)}`);
+  if(perf&&perf.swingLabel)bits.push(perf.swingLabel);
   $("tpInfo").innerHTML=esc(bits.join(" · "));
 }
 function syncPlayUI(){
@@ -4277,6 +4358,25 @@ ${ex(["X:1","T:Wind quintet","M:4/4","L:1/4","V:Fl name=\"Flute\"","%%instrument
 ${ex(["X:1","T:String quartet","M:4/4","L:1/4","K:D","%%score (Vln1 Vln2) (Vla) (Vc)","V:Vln1","%%instrument violin","V:Vln2","%%instrument violin","V:Vla clef=alto","%%instrument viola","V:Vc clef=bass","%%instrument cello","[V:Vln1] d2 f2 | a4 |]","[V:Vln2] A2 d2 | f4 |]","[V:Vla] F2 A2 | d4 |]","[V:Vc] D,2 D,2 | D,4 |]"])}
 <p>Names you can use: <code>violin</code>, <code>viola</code>, <code>cello</code>, <code>double-bass</code>, <code>flute</code>, <code>oboe</code>, <code>clarinet</code>, <code>bassoon</code>, <code>piano</code>, <code>harpsichord</code>, <code>clavichord</code>, <code>electric-piano</code>, <code>guitar</code>, <code>steel-guitar</code>, <code>electric-guitar</code>, <code>jazz-guitar</code>, <code>muted-guitar</code>, <code>overdrive-guitar</code>, <code>distortion-guitar</code>, <code>harp</code>, <code>trumpet</code>, <code>french-horn</code> (or <code>horn</code>), <code>trombone</code>, <code>tuba</code>, <code>soprano-ukulele</code> (or <code>ukulele</code>), <code>tenor-ukulele</code>, <code>bass-guitar</code> (or <code>electric-bass</code>), <code>picked-bass</code>, <code>pizzicato-strings</code>, <code>vibraphone</code>, <code>marimba</code>, <code>xylophone</code>, and the synths <code>saw-lead</code> (or <code>synth</code>), <code>square-lead</code>, <code>sine-lead</code>, <code>chiptune</code>, <code>supersaw</code>, <code>synth-pluck</code>, <code>synth-brass</code>, <code>string-machine</code>, <code>warm-pad</code>, <code>sweep-pad</code>, <code>crystal-pad</code>, <code>fm-piano</code>, <code>fm-bells</code>, <code>organ</code>, <code>synth-bass</code>, <code>acid-bass</code>, <code>sub-bass</code>, <code>pwm-pad</code>, <code>reese-bass</code>; and retro sounds <code>chiptune</code>, <code>chip-pulse</code>, <code>chip-triangle</code>, <code>chip-wave</code>, <code>computer-lead</code>, <code>computer-bass</code>, <code>beeper</code>, <code>retro-buzz</code>, <code>crt-glow</code>, <code>vector-arcade</code>, <code>crt-pad</code>. Put it in the tune header, before any <code>V:</code>, to set the whole tune. An unknown name shows as a warning on its line.</p>
 <p><code>%%instrument</code> is a codeABC shorthand that becomes the standard <code>%%MIDI program</code> (violin is program 40), so MIDI exports carry each voice's instrument. You can also write <code>%%MIDI program</code> yourself — codeABC plays it with its nearest sound; program 0 means "not set".</p>
+<h3>Swing <span class="muted">— a codeABC extension</span></h3>
+<p>Jazz is written in even eighth notes but played long-short. Add <code>%%swing</code> to the tune header and playback, WAV and MIDI exports swing every pair of eighths. The score itself doesn't change.</p>
+${ex(["X:1","T:Blues head","M:4/4","L:1/8","Q:1/4=132","%%swing","K:F","FAcd fdcA | B,DFG BGFD | F2 A2 c2 z2 |]"])}
+<table>
+<tr><th>Write</th><th>Feel</th></tr>
+<tr><td><code>%%swing</code></td><td><b>Natural</b>: the swing follows the tempo, as players' does — about 2.3:1 at a slow ♩=80, 2:1 near ♩=140, lighter and lighter towards straight at very fast tempos</td></tr>
+<tr><td><code>%%swing light</code></td><td>3:2 — a gentle lilt</td></tr>
+<tr><td><code>%%swing medium</code></td><td>2:1 — the triplet feel</td></tr>
+<tr><td><code>%%swing hard</code></td><td>3:1 — a heavy shuffle</td></tr>
+<tr><td><code>%%swing 2.5:1</code>, <code>%%swing 64%</code></td><td>An exact ratio, or how much of the beat the first eighth takes (50% is straight)</td></tr>
+<tr><td><code>%%swing 16</code></td><td>Swing sixteenths instead of eighths (ballads, funk shuffles); combine with a feel, e.g. <code>%%swing light 16</code></td></tr>
+<tr><td><code>%%swing off</code></td><td>Straight again from this point (e.g. a Latin section)</td></tr>
+</table>
+<ul>
+<li>Only the off-beat note of each pair moves: triplets, dotted rhythms and quarter notes play as written, and 6/8, 9/8 and 12/8 (already in three) are left alone. A pickup bar is counted correctly.</li>
+<li>To sound played rather than programmed, swing also puts a light accent on the swung “and”, lifts beats 2 and 4, and loosens the timing by a few milliseconds — the same way every time, so exports match playback.</li>
+<li>Before the first <code>X:</code> it covers every tune in the file; inside a tune it applies to the music written after it. The transport shows the swing in use, e.g. <i>swing 2.1:1</i>.</li>
+<li>Other ABC programs skip <code>%%swing</code> as an unknown directive.</li>
+</ul>
 <h3>Pizzicato and arco</h3>
 <p>For the violin, viola, cello and double bass, write <code>!pizz!</code> before a note to start plucking and <code>!arco!</code> to go back to the bow. They are engraved as <i>pizz.</i> and <i>arco</i> above the staff, and the usual text marks <code>"^pizz."</code> and <code>"^arco"</code> work the same way. Each voice keeps its own setting until told otherwise.</p>
 ${ex(["%%instrument cello","!pizz!D, A, D A | !arco!d4 |]"])}
